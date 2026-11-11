@@ -250,7 +250,7 @@ function actualizar(dt) {
   G.cors = G.cors.filter(c => c.x > -30 && !c.tomado);
 
   // Colisiones
-  const caja = { x: yo.x - 9, y: yo.y - 38, w: 18, h: 36 };
+  const caja = { x: yo.x - 9, y: yo.y - 46, w: 18, h: 44 };
   for (const o of G.obst) {
     const oc = { x: o.x + 3, y: SUELO - o.h + 4, w: o.w - 6, h: o.h - 4 };
     if (G.invul <= 0 && caja.x < oc.x + oc.w && caja.x + caja.w > oc.x && caja.y < oc.y + oc.h && caja.y + caja.h > oc.y) {
@@ -262,7 +262,7 @@ function actualizar(dt) {
     }
   }
   for (const c of G.cors) {
-    if (Math.hypot(c.x - yo.x, c.y - (yo.y - 20)) < 24) {
+    if (Math.hypot(c.x - yo.x, c.y - (yo.y - 26)) < 26) {
       c.tomado = true; G.corazones++; G.total++; G.corazonesNivel++;
       sonido('corazon');
       for (let i = 0; i < 8; i++) G.parts.push({ x: c.x, y: c.y, vx: azar(-90, 90), vy: azar(-110, 20), v: 1, c: '#ff8fb1', r: azar(1.5, 3) });
@@ -372,51 +372,125 @@ function personaje(x, y, anim, esChica, parpadeo) {
   if (parpadeo && Math.floor(G.t * 12) % 2 === 0) return;
   const paso = Math.sin(anim) * 5;
   const enAire = y < SUELO - 1;
-  ctx.save();
-  ctx.translate(x, y);
+  const c = ctx;
+  const elipse = (x, y, rx, ry, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 6.28); c.fill(); };
+  c.save();
+  c.translate(x, y);
+
   if (esChica) {
-    // Piernas
-    ctx.fillStyle = '#5b3a2e';
-    ctx.fillRect(-5, -8, 3, 8); ctx.fillRect(2, -8, 3, 8);
-    // Vestido
-    ctx.fillStyle = '#ff6f9c';
-    ctx.beginPath(); ctx.moveTo(-11, -8); ctx.lineTo(11, -8); ctx.lineTo(5, -28); ctx.lineTo(-5, -28); ctx.closePath(); ctx.fill();
-    // Pelo largo
-    ctx.fillStyle = '#3b2418';
-    ctx.beginPath(); ctx.ellipse(0, -36, 9, 11, 0, 0, 6.28); ctx.fill();
-    ctx.fillRect(-9, -36, 18, 14);
-    // Cara
-    ctx.fillStyle = '#f2c4a0';
-    ctx.beginPath(); ctx.arc(0, -36, 7, 0, 6.28); ctx.fill();
-    ctx.fillStyle = '#3b2418';
-    ctx.fillRect(-7, -43, 14, 4);
-    // Flor en el pelo
-    ctx.fillStyle = '#ffd56b'; ctx.beginPath(); ctx.arc(7, -42, 2.5, 0, 6.28); ctx.fill();
-    // Ojos y sonrisa
-    ctx.fillStyle = '#3b2418'; ctx.fillRect(-3, -37, 1.6, 1.6); ctx.fillRect(2, -37, 1.6, 1.6);
-    ctx.strokeStyle = '#c2557f'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, -34, 2, .2, Math.PI - .2); ctx.stroke();
-  } else {
-    // Piernas
-    ctx.fillStyle = '#2f3b66';
-    if (enAire) { ctx.fillRect(-5, -12, 4, 10); ctx.fillRect(1, -12, 4, 8); }
-    else { ctx.fillRect(-5 + paso * .4, -12, 4, 12); ctx.fillRect(1 - paso * .4, -12, 4, 12); }
-    // Camiseta
-    ctx.fillStyle = '#4fa3ff';
-    ctx.fillRect(-8, -28, 16, 17);
+    // --- Ella: pelo largo ondulado oscuro con puntas rojizas, camiseta rosada, labios rojos ---
+    const balanceo = Math.sin(G.t * 2) * 1.2;
+    // Pelo de atrás (largo y ondulado)
+    c.fillStyle = '#2a1712';
+    c.beginPath();
+    c.moveTo(-12, -48); c.quadraticCurveTo(-17, -30, -13 + balanceo, -16);
+    c.lineTo(13 + balanceo, -16); c.quadraticCurveTo(17, -30, 12, -48); c.closePath(); c.fill();
+    // Rizos de las puntas (rojizos)
+    for (let i = 0; i < 6; i++) {
+      elipse(-12 + i * 4.8 + balanceo, -16 + (i % 2) * 2, 3.4, 3.8, i % 2 ? '#6b2a24' : '#4a1d18');
+    }
+    // Piernas y zapatos
+    elipse(-4, -1, 3.2, 1.8, '#f4f1ea'); elipse(4, -1, 3.2, 1.8, '#f4f1ea');
+    c.fillStyle = '#2d2d44'; c.fillRect(-6, -14, 4, 13); c.fillRect(2, -14, 4, 13);
+    // Camiseta rosada con rayas de colores
+    c.save();
+    c.beginPath(); c.roundRect ? c.roundRect(-10, -31, 20, 18, 4) : c.rect(-10, -31, 20, 18); c.clip();
+    c.fillStyle = '#ff9cc7'; c.fillRect(-10, -31, 20, 18);
+    [['#ffe28a', -6], ['#8fe3d6', 0], ['#ffffff', 6]].forEach(([col, dx]) => {
+      c.fillStyle = col; c.globalAlpha = .75;
+      c.beginPath(); c.moveTo(dx - 2, -13); c.lineTo(dx + 4, -31); c.lineTo(dx + 6, -31); c.lineTo(dx, -13); c.closePath(); c.fill();
+    });
+    c.globalAlpha = 1;
+    c.restore();
+    // Gafas colgando de la camiseta
+    c.strokeStyle = '#e35d8c'; c.lineWidth = .9;
+    c.beginPath(); c.arc(-3, -22, 2.2, 0, 6.28); c.stroke();
+    c.beginPath(); c.arc(2.5, -22, 2.2, 0, 6.28); c.stroke();
     // Brazos
-    ctx.fillStyle = '#f2c4a0';
-    ctx.fillRect(-11, -26 - (enAire ? 4 : paso * .3), 3, 10);
-    ctx.fillRect(8, -26 + (enAire ? -4 : paso * .3), 3, 10);
+    c.fillStyle = '#ecbd98';
+    c.fillRect(-13, -29, 3.5, 11); c.fillRect(9.5, -29, 3.5, 11);
+    c.fillStyle = '#ff9cc7'; c.fillRect(-13, -30, 4, 4); c.fillRect(9, -30, 4, 4);
+    // Cuello y collar dorado
+    c.fillStyle = '#ecbd98'; c.fillRect(-2.5, -34, 5, 4);
+    c.strokeStyle = '#e8c15a'; c.lineWidth = .8; c.beginPath(); c.arc(0, -33, 3.6, .3, Math.PI - .3); c.stroke();
     // Cabeza
-    ctx.beginPath(); ctx.arc(0, -35, 7, 0, 6.28); ctx.fill();
-    ctx.fillStyle = '#2a1a12';
-    ctx.beginPath(); ctx.ellipse(0, -40, 8, 4.5, 0, Math.PI, 0); ctx.fill();
-    ctx.fillRect(-8, -41, 16, 3);
-    // Ojos y sonrisa
-    ctx.fillRect(1, -36, 1.6, 1.6); ctx.fillRect(4, -36, 1.6, 1.6);
-    ctx.strokeStyle = '#a0522d'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(3, -33, 2, .2, Math.PI - .2); ctx.stroke();
+    elipse(0, -42, 9.5, 10, '#ecbd98');
+    // Pelo de arriba (peinado hacia atrás) y mechones a los lados
+    c.fillStyle = '#2a1712';
+    c.beginPath(); c.ellipse(0, -45, 10.5, 8.5, 0, Math.PI, 0); c.fill();
+    c.fillRect(-10.5, -46, 3, 8); c.fillRect(7.5, -46, 3, 8);
+    for (let i = 0; i < 4; i++) { elipse(-11, -40 + i * 5, 2.6, 3, '#2a1712'); elipse(11, -40 + i * 5, 2.6, 3, i > 1 ? '#6b2a24' : '#2a1712'); }
+    // Brillo del pelo
+    c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 1;
+    c.beginPath(); c.arc(-1, -46, 6, Math.PI * 1.15, Math.PI * 1.55); c.stroke();
+    // Pinza de mariposa
+    c.fillStyle = '#f3ead0';
+    c.beginPath(); c.ellipse(-4.5, -53, 2.6, 1.8, -.5, 0, 6.28); c.fill();
+    c.beginPath(); c.ellipse(-0.5, -53, 2.6, 1.8, .5, 0, 6.28); c.fill();
+    // Ojos con delineado (mirando hacia él, a la izquierda)
+    elipse(-5.5, -41, 1.5, 1.9, '#2a1712'); elipse(-0.5, -41, 1.5, 1.9, '#2a1712');
+    c.fillStyle = '#fff'; c.fillRect(-6, -42, .8, .8); c.fillRect(-1, -42, .8, .8);
+    c.strokeStyle = '#1a0f0c'; c.lineWidth = .8;
+    c.beginPath(); c.moveTo(-7.5, -42.5); c.lineTo(-8.8, -43.6); c.stroke();
+    c.beginPath(); c.moveTo(1.2, -42.5); c.lineTo(2.4, -43.6); c.stroke();
+    // Mejillas y labios rojos
+    elipse(-7, -37.5, 1.8, 1.1, 'rgba(255,120,140,.45)'); elipse(2.5, -37.5, 1.8, 1.1, 'rgba(255,120,140,.45)');
+    elipse(-3, -35.8, 2, 1.1, '#c8102e');
+    // Aretes
+    elipse(9.6, -37, 1, 1, '#ffd1e6');
+  } else {
+    // --- Él: pelo castaño oscuro con volumen, camiseta café con letras rosadas ---
+    // Zapatos y piernas
+    c.fillStyle = '#2b2b36';
+    if (enAire) {
+      c.fillRect(-6, -14, 4.5, 11); c.fillRect(1.5, -14, 4.5, 8);
+      elipse(-4, -3, 3.2, 1.8, '#1b1b22'); elipse(4, -6, 3.2, 1.8, '#1b1b22');
+    } else {
+      c.fillRect(-6 + paso * .4, -14, 4.5, 13); c.fillRect(1.5 - paso * .4, -14, 4.5, 13);
+      elipse(-4 + paso * .4, -1, 3.2, 1.8, '#1b1b22'); elipse(4 - paso * .4, -1, 3.2, 1.8, '#1b1b22');
+    }
+    // Brazos (detrás)
+    const brazo = enAire ? -5 : paso * .4;
+    c.fillStyle = '#f7d6c4';
+    c.fillRect(-13, -29 - brazo, 3.5, 11);
+    c.fillRect(9.5, -29 + brazo, 3.5, 11);
+    c.fillStyle = '#6e4b3c';
+    c.fillRect(-13, -30 - brazo, 4, 4.5); c.fillRect(9, -30 + brazo, 4, 4.5);
+    // Camiseta café
+    c.fillStyle = '#6e4b3c';
+    c.beginPath(); c.roundRect ? c.roundRect(-10, -31, 20, 18, 4) : c.rect(-10, -31, 20, 18); c.fill();
+    // Letras rosadas en el pecho
+    c.strokeStyle = '#f2a0b8'; c.lineWidth = 1.1;
+    c.beginPath(); c.moveTo(-7, -25); c.quadraticCurveTo(0, -28.5, 7, -25); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = .6;
+    c.beginPath(); c.moveTo(-6, -23.5); c.quadraticCurveTo(0, -27, 6, -23.5); c.stroke();
+    c.strokeStyle = '#f2a0b8'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(-2, -21); c.lineTo(2, -21); c.stroke();
+    // Cuello
+    c.fillStyle = '#f7d6c4'; c.fillRect(-2.5, -34, 5, 4);
+    // Cabeza
+    elipse(0, -42, 9.5, 10, '#f7d6c4');
+    // Pelo con volumen hacia arriba y peinado de lado
+    c.fillStyle = '#3b2a20';
+    c.beginPath(); c.ellipse(0, -47, 11, 7.5, 0, Math.PI * .95, Math.PI * 2.05); c.fill();
+    elipse(-3, -52, 8, 5.5, '#3b2a20');
+    elipse(4, -54, 6, 4.5, '#47332a');
+    elipse(-9, -44, 3, 5, '#3b2a20');
+    c.beginPath(); c.moveTo(-9, -48); c.quadraticCurveTo(-2, -42, 6, -46); c.lineTo(8, -49); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1;
+    c.beginPath(); c.arc(1, -51, 5, Math.PI * 1.1, Math.PI * 1.6); c.stroke();
+    // Cejas y ojos (mirando hacia adelante, a la derecha)
+    c.strokeStyle = '#2a1d16'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(0, -45); c.lineTo(4, -45.6); c.stroke();
+    c.beginPath(); c.moveTo(5.5, -45.6); c.lineTo(8.5, -45); c.stroke();
+    elipse(2.3, -41.5, 1.6, 2, '#2a1d16'); elipse(7, -41.5, 1.5, 1.9, '#2a1d16');
+    c.fillStyle = '#fff'; c.fillRect(2.6, -42.6, .9, .9); c.fillRect(7.2, -42.6, .8, .8);
+    // Mejilla y sonrisa
+    elipse(1, -37.8, 1.8, 1, 'rgba(255,140,150,.35)');
+    c.strokeStyle = '#b5675a'; c.lineWidth = .9;
+    c.beginPath(); c.arc(5, -37.5, 2, .3, Math.PI - .5); c.stroke();
   }
-  ctx.restore();
+  c.restore();
 }
 
 let fuegos = 0, chispasFuego = [];
@@ -457,7 +531,7 @@ function dibujar() {
   // Chica
   if (G.chica) {
     personaje(G.chica.x, SUELO, 0, true, false);
-    if (G.encuentro) corazon(G.chica.x - 15, SUELO - 62 - Math.sin(G.t * 3) * 4, 30 + Math.sin(G.t * 6) * 3, '#ff4f86');
+    if (G.encuentro) corazon(G.chica.x - 15, SUELO - 74 - Math.sin(G.t * 3) * 4, 30 + Math.sin(G.t * 6) * 3, '#ff4f86');
   }
   // Jugador
   if (G.estado !== 'menu') personaje(yo.x, yo.y, yo.anim, false, G.invul > 0);
