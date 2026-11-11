@@ -117,6 +117,12 @@
   .final-caja .texto { margin-top: 14px; color: var(--texto); font-weight: 300; font-size: 1.05rem; line-height: 1.75; }
   .final-caja .firma { margin-top: 18px; font-family: 'Dancing Script', cursive; font-size: 1.7rem; color: #ffb3e0; }
 
+  .aviso {
+    display: none; margin-top: 12px; padding: 12px 14px; border-radius: 12px; font-size: .85rem; line-height: 1.5;
+    background: rgba(255, 213, 107, .12); border: 1px solid rgba(255, 213, 107, .4); color: #ffe7a3;
+  }
+  .aviso.ver { display: block; }
+  .aviso a { color: #fff; font-weight: 600; }
   .particula { position: fixed; z-index: 30; pointer-events: none; }
 </style>
 </head>
@@ -145,6 +151,7 @@
       <small>Un deseo de tu hijo</small>
       <p id="texto-dedicatoria"></p>
     </div>
+    <div class="aviso" id="aviso"></div>
     <div class="controles">
       <button class="ctrl" id="anterior" aria-label="Anterior"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
       <button class="ctrl play" id="play" aria-label="Reproducir o pausar"><svg viewBox="0 0 24 24" id="icono-play"><path d="M8 5v14l11-7z"/></svg></button>
@@ -244,7 +251,12 @@ window.onYouTubeIframeAPIReady = () => {
         listo = true;
         if (pendiente !== null) { const p = pendiente; pendiente = null; cargar(p, true); }
       },
+      onError: (e) => {
+        const c = CONFIG.canciones[actual];
+        avisar(`Esta canción no se pudo reproducir aquí. <a href="https://www.youtube.com/watch?v=${c.id}" target="_blank" rel="noopener">Ábrela en YouTube</a> o toca "siguiente".`);
+      },
       onStateChange: (e) => {
+        if (e.data === YT.PlayerState.PLAYING) ocultarAviso();
         sonando = e.data === YT.PlayerState.PLAYING;
         document.body.classList.toggle('pausado', !sonando);
         $('icono-play').innerHTML = sonando
@@ -285,7 +297,6 @@ $('anterior').addEventListener('click', () => cargar((actual - 1 + CONFIG.cancio
 $('btn-empezar').addEventListener('click', () => {
   $('capa-inicio').classList.remove('visible');
   cargar(0, true);
-  if (listo) reproductor.playVideo();
 });
 function mostrarFinal() {
   $('capa-final').classList.add('visible');
@@ -314,6 +325,16 @@ function estallido(x, y, n) {
     ], { duration: azar(1000, 1600), easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'forwards' }).onfinish = () => p.remove();
   }
 }
+
+function avisar(html) { const a = $('aviso'); a.innerHTML = html; a.classList.add('ver'); }
+function ocultarAviso() { $('aviso').classList.remove('ver'); }
+
+if (location.protocol === 'file:') {
+  avisar('Las canciones no suenan si abres el archivo directamente. Ábrela desde su link de internet (GitHub Pages) y funcionará.');
+}
+setTimeout(() => {
+  if (!listo) avisar('El reproductor está tardando en cargar. Revisa tu conexión a internet y recarga la página.');
+}, 9000);
 
 /* Mostrar la primera canción mientras carga */
 cargar(0, false);
