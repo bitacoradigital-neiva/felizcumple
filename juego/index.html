@@ -27,8 +27,25 @@
   .progreso { position: relative; height: 8px; border-radius: 999px; background: rgba(255,255,255,.22); }
   .progreso .relleno { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #ffd56b, #ff6f9c); }
   .progreso .meta { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); font-size: 1rem; }
+  .controles {
+    position: fixed; z-index: 6; left: 0; right: 0; bottom: 14px; padding: 0 16px;
+    display: none; justify-content: space-between; pointer-events: none;
+  }
+  .controles.ver { display: flex; }
+  .ctrl {
+    pointer-events: auto; width: 74px; height: 74px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.55); background: rgba(0,0,0,.22); color: #fff;
+    font-family: 'Poppins', sans-serif; font-size: .7rem; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); touch-action: none;
+  }
+  .ctrl span { font-size: 1.5rem; line-height: 1; }
+  .ctrl.activo { background: rgba(255,255,255,.35); transform: scale(.94); }
+  @media (pointer: fine) { .controles.ver { display: none; } }
+  .solo-pc { display: none; } .solo-cel { display: inline; }
+  @media (pointer: fine) { .solo-pc { display: inline; } .solo-cel { display: none; } }
   .boton-sonido {
-    position: fixed; z-index: 6; right: 12px; bottom: 12px; width: 40px; height: 40px; border-radius: 50%;
+    position: fixed; z-index: 7; right: 12px; top: 72px; width: 38px; height: 38px; border-radius: 50%;
     border: 1px solid rgba(255,255,255,.35); background: rgba(0,0,0,.25); color: #fff; font-size: 1.1rem; cursor: pointer;
   }
 
@@ -79,6 +96,10 @@
   </div>
   <div class="progreso"><div class="relleno" id="hud-barra"></div><span class="meta">💖</span></div>
 </div>
+<div class="controles" id="controles">
+  <button class="ctrl" id="btn-agachar" aria-label="Agacharse"><span>⬇</span>Agachar</button>
+  <button class="ctrl" id="btn-saltar" aria-label="Saltar"><span>⬆</span>Saltar</button>
+</div>
 <button class="boton-sonido" id="btn-sonido" aria-label="Activar o silenciar sonido">🔊</button>
 
 <!-- Menú -->
@@ -87,7 +108,11 @@
     <div class="icono">🎮</div>
     <h1 id="titulo-juego"></h1>
     <p class="sub" id="sub-juego"></p>
-    <p class="instrucciones">Toca la pantalla para saltar y dos veces para un salto doble.<br>Esquiva los obstáculos y los pájaros que te atacan.<br>Si caes encima de un pájaro, lo vences 💥<br>Tienes 3 vidas ❤️ · Recoge todos los corazones 💖</p>
+    <p class="instrucciones">
+      <span class="solo-cel">Usa el botón <b>⬆ Saltar</b> (dos veces para salto doble) y mantén <b>⬇ Agachar</b> para esquivar pájaros.</span>
+      <span class="solo-pc"><b>Espacio / ↑</b> para saltar (dos veces para salto doble) y mantén <b>↓</b> para agacharte.</span>
+      <br>Salta los obstáculos, agáchate ante los pájaros que vuelan a media altura y cae encima de ellos para vencerlos 💥
+      <br>Tienes 3 vidas ❤️ · Recoge todos los corazones 💖</p>
     <p class="giro">📱 Tip: gira el celular para verlo más grande</p>
     <button class="boton" id="btn-jugar">Empezar el viaje</button>
   </div>
@@ -161,9 +186,11 @@ function ajustar() {
   W = innerWidth; H = innerHeight;
   lienzo.width = W * DPR; lienzo.height = H * DPR;
   lienzo.style.width = W + 'px'; lienzo.style.height = H + 'px';
-  escala = Math.min(H / 360, W / 420);
+  escala = Math.min(H / 360, W / 380);
   VW = W / escala; VH = H / escala;
-  SUELO = VH - 64;
+  // En celulares se deja espacio abajo para los botones, así no tapan al personaje
+  const tactil = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  SUELO = VH - Math.max(64, tactil ? 112 / escala : 0);
   ctx.setTransform(DPR * escala, 0, 0, DPR * escala, 0, 0);
   crearEstrellas();
 }
@@ -188,7 +215,8 @@ const G = {
   sigObst: 500, sigCor: 260, terminando: false, finEn: 0, invul: 0, t: 0,
   chica: null, encuentro: 0, enemigos: [], sigEnemigo: 900, vidas: 3
 };
-const yo = { x: 80, y: 0, vy: 0, saltos: 0, anim: 0 };
+const yo = { x: 80, y: 0, vy: 0, saltos: 0, anim: 0, agachado: false, aplastar: 0, enAireAntes: false, polvo: 0 };
+let presionandoAbajo = false;
 
 function iniciarNivel(n) {
   Object.assign(G, {
@@ -199,7 +227,8 @@ function iniciarNivel(n) {
   G.inicioNivelTotal = G.total;
   G.corazonesNivel = 0;
   pintarVidas();
-  yo.x = 80; yo.y = SUELO; yo.vy = 0; yo.saltos = 0;
+  yo.x = 80; yo.y = SUELO; yo.vy = 0; yo.saltos = 0; yo.agachado = false; yo.aplastar = 0;
+  $('controles').classList.add('ver');
   $('hud-nivel').textContent = CONFIG.niveles[n].nombre;
   $('hud').classList.add('ver');
 }
@@ -207,6 +236,8 @@ function iniciarNivel(n) {
 function saltar() {
   if (G.estado !== 'jugando') return;
   if (yo.saltos < 2) {
+    yo.agachado = false;
+    yo.aplastar = -.6;
     yo.vy = yo.saltos === 0 ? -560 : -500;
     yo.saltos++;
     sonido('salto');
@@ -239,8 +270,8 @@ function crearFilaCorazones() {
 function crearEnemigo() {
   const r = Math.random();
   let tipo, y;
-  if (r < .4) { tipo = 'bajo'; y = SUELO - 18; }            // vuela bajito: hay que saltarlo
-  else if (r < .7) { tipo = 'alto'; y = SUELO - 78; }       // vuela alto: no saltes
+  if (r < .35) { tipo = 'bajo'; y = SUELO - 16; }           // vuela bajito: hay que saltarlo
+  else if (r < .75) { tipo = 'medio'; y = SUELO - 40; }     // a media altura: hay que agacharse
   else { tipo = 'picada'; y = SUELO - 130; }                // se lanza en picada hacia ti
   G.enemigos.push({ x: VW + 30, y, y0: y, tipo, aleteo: azar(0, 6), vivo: true, vx: azar(80, 140) + G.nivel * 20 });
 }
@@ -272,9 +303,25 @@ function actualizar(dt) {
   if (G.estado !== 'jugando' && G.estado !== 'encuentro') return;
 
   // Física del jugador
-  yo.vy += 1500 * dt;
+  const enAire = yo.y < SUELO - .5;
+  yo.vy += (presionandoAbajo && enAire ? 3400 : 1500) * dt;   // mantener abajo en el aire = caer rápido
   yo.y += yo.vy * dt;
-  if (yo.y >= SUELO) { yo.y = SUELO; yo.vy = 0; yo.saltos = 0; }
+  if (yo.y >= SUELO) {
+    if (yo.enAireAntes && yo.vy > 200) {
+      yo.aplastar = 1;
+      for (let i = 0; i < 8; i++) G.parts.push({ x: yo.x + azar(-8, 8), y: SUELO - 1, vx: azar(-90, 40), vy: azar(-70, -10), v: .7, c: 'rgba(255,255,255,.7)', r: azar(1.5, 3) });
+    }
+    yo.y = SUELO; yo.vy = 0; yo.saltos = 0;
+  }
+  yo.enAireAntes = yo.y < SUELO - .5;
+  yo.agachado = presionandoAbajo && !yo.enAireAntes && G.estado === 'jugando';
+  yo.aplastar *= Math.pow(.0008, dt);
+  // Polvito al correr
+  yo.polvo -= dt;
+  if (!yo.enAireAntes && G.vel > 0 && yo.polvo <= 0) {
+    yo.polvo = .12;
+    G.parts.push({ x: yo.x - 6, y: SUELO - 1, vx: azar(-80, -30), vy: azar(-30, -5), v: .5, c: 'rgba(255,255,255,.45)', r: azar(1, 2.2) });
+  }
   yo.anim += dt * (G.vel > 0 ? 12 : 0);
   if (G.invul > 0) G.invul -= dt;
 
@@ -314,7 +361,7 @@ function actualizar(dt) {
   G.cors = G.cors.filter(c => c.x > -30 && !c.tomado);
 
   // Colisiones
-  const caja = { x: yo.x - 9, y: yo.y - 46, w: 18, h: 44 };
+  const caja = yo.agachado ? { x: yo.x - 11, y: yo.y - 27, w: 22, h: 25 } : { x: yo.x - 9, y: yo.y - 46, w: 18, h: 44 };
   for (const o of G.obst) {
     const oc = { x: o.x + 3, y: SUELO - o.h + 4, w: o.w - 6, h: o.h - 4 };
     if (G.invul <= 0 && caja.x < oc.x + oc.w && caja.x + caja.w > oc.x && caja.y < oc.y + oc.h && caja.y + caja.h > oc.y) {
@@ -324,7 +371,7 @@ function actualizar(dt) {
   for (const e of G.enemigos) {
     if (!e.vivo || G.estado !== 'jugando') continue;
     const ex = e.x, ey = e.y;
-    const dx = Math.abs(ex - yo.x), cabeza = yo.y - 46;
+    const dx = Math.abs(ex - yo.x), cabeza = yo.y - (yo.agachado ? 27 : 46);
     if (dx < 16 && yo.vy > 0 && yo.y > ey - 12 && yo.y < ey + 6) {
       // Le cayó encima: lo vence
       e.vivo = false; yo.vy = -430; yo.saltos = 1;
@@ -336,7 +383,7 @@ function actualizar(dt) {
     }
   }
   for (const c of G.cors) {
-    if (Math.hypot(c.x - yo.x, c.y - (yo.y - 26)) < 26) {
+    if (Math.hypot(c.x - yo.x, c.y - (yo.y - (yo.agachado ? 14 : 26))) < 26) {
       c.tomado = true; G.corazones++; G.total++; G.corazonesNivel++;
       sonido('corazon');
       for (let i = 0; i < 8; i++) G.parts.push({ x: c.x, y: c.y, vx: azar(-90, 90), vy: azar(-110, 20), v: 1, c: '#ff8fb1', r: azar(1.5, 3) });
@@ -383,6 +430,7 @@ function terminarNivel() {
 function mostrarFinal() {
   G.estado = 'fin';
   $('hud').classList.remove('ver');
+  $('controles').classList.remove('ver');
   $('final-titulo').textContent = CONFIG.final.titulo;
   $('final-dato').textContent = `Recogiste ${G.total} corazones en el camino 💖, pero el mío ya era tuyo desde hace mucho.`;
   $('final-texto').textContent = CONFIG.final.texto;
@@ -454,6 +502,9 @@ function personaje(x, y, anim, esChica, parpadeo) {
   if (esChica) {
     // --- Ella: pelo largo ondulado oscuro con puntas rojizas, camiseta rosada, labios rojos ---
     const balanceo = Math.sin(G.t * 2) * 1.2;
+    const respira = Math.sin(G.t * 2.4) * .025;
+    c.scale(1 - respira * .5, 1 + respira);
+    if (G.encuentro) c.translate(0, -Math.abs(Math.sin((G.t - G.encuentro) * 7)) * 4 * Math.max(0, 1 - (G.t - G.encuentro) / 1.4));
     // Pelo de atrás (largo y ondulado)
     c.fillStyle = '#2a1712';
     c.beginPath();
@@ -502,8 +553,12 @@ function personaje(x, y, anim, esChica, parpadeo) {
     c.beginPath(); c.ellipse(-4.5, -53, 2.6, 1.8, -.5, 0, 6.28); c.fill();
     c.beginPath(); c.ellipse(-0.5, -53, 2.6, 1.8, .5, 0, 6.28); c.fill();
     // Ojos con delineado (mirando hacia él, a la izquierda)
-    elipse(-5.5, -41, 1.5, 1.9, '#2a1712'); elipse(-0.5, -41, 1.5, 1.9, '#2a1712');
-    c.fillStyle = '#fff'; c.fillRect(-6, -42, .8, .8); c.fillRect(-1, -42, .8, .8);
+    if (((G.t + 1.7) % 3.9) < .12) {
+      c.strokeStyle = '#2a1712'; c.lineWidth = 1; c.beginPath(); c.moveTo(-7, -41); c.lineTo(-4, -41); c.moveTo(-2, -41); c.lineTo(1, -41); c.stroke();
+    } else {
+      elipse(-5.5, -41, 1.5, 1.9, '#2a1712'); elipse(-0.5, -41, 1.5, 1.9, '#2a1712');
+      c.fillStyle = '#fff'; c.fillRect(-6, -42, .8, .8); c.fillRect(-1, -42, .8, .8);
+    }
     c.strokeStyle = '#1a0f0c'; c.lineWidth = .8;
     c.beginPath(); c.moveTo(-7.5, -42.5); c.lineTo(-8.8, -43.6); c.stroke();
     c.beginPath(); c.moveTo(1.2, -42.5); c.lineTo(2.4, -43.6); c.stroke();
@@ -514,25 +569,37 @@ function personaje(x, y, anim, esChica, parpadeo) {
     elipse(9.6, -37, 1, 1, '#ffd1e6');
   } else {
     // --- Él: pelo castaño oscuro con volumen, camiseta café con letras rosadas ---
-    // Zapatos y piernas
-    c.fillStyle = '#2b2b36';
-    if (enAire) {
-      c.fillRect(-6, -14, 4.5, 11); c.fillRect(1.5, -14, 4.5, 8);
-      elipse(-4, -3, 3.2, 1.8, '#1b1b22'); elipse(4, -6, 3.2, 1.8, '#1b1b22');
-    } else {
-      c.fillRect(-6 + paso * .4, -14, 4.5, 13); c.fillRect(1.5 - paso * .4, -14, 4.5, 13);
-      elipse(-4 + paso * .4, -1, 3.2, 1.8, '#1b1b22'); elipse(4 - paso * .4, -1, 3.2, 1.8, '#1b1b22');
-    }
-    // Brazos (detrás)
-    const brazo = enAire ? -5 : paso * .4;
-    c.fillStyle = '#f7d6c4';
-    c.fillRect(-13, -29 - brazo, 3.5, 11);
-    c.fillRect(9.5, -29 + brazo, 3.5, 11);
-    c.fillStyle = '#6e4b3c';
-    c.fillRect(-13, -30 - brazo, 4, 4.5); c.fillRect(9, -30 + brazo, 4, 4.5);
+    const agachado = yo.agachado;
+    const sq = yo.aplastar;                       // + aplastado al caer, - estirado al saltar
+    const rebote = enAire || agachado ? 0 : Math.abs(Math.sin(anim)) * 2.2;
+    const inclina = enAire ? Math.max(-.25, Math.min(.25, yo.vy / 1800)) : (agachado ? .1 : .06);
+    c.translate(0, -rebote);
+    c.scale(1 + sq * .14 + (agachado ? .12 : 0), 1 - sq * .14 - (agachado ? .38 : 0));
+    c.rotate(inclina);
+    // Sombra de los pies se dibuja aparte; aquí las piernas
+    const a = enAire ? 0 : Math.sin(anim) * .75;
+    const pierna = (cx, ang, dobla) => {
+      c.save(); c.translate(cx, -14); c.rotate(ang);
+      c.fillStyle = '#2b2b36'; c.fillRect(-2.2, 0, 4.5, 7);
+      c.translate(0, 7); c.rotate(dobla);
+      c.fillRect(-2.2, 0, 4.5, 7);
+      c.fillStyle = '#1b1b22'; c.beginPath(); c.ellipse(1.2, 7, 3.4, 1.9, 0, 0, 6.28); c.fill();
+      c.restore();
+    };
+    const brazo = (cx, ang) => {
+      c.save(); c.translate(cx, -29); c.rotate(ang);
+      c.fillStyle = '#f7d6c4'; c.fillRect(-1.8, 0, 3.6, 11);
+      c.fillStyle = '#6e4b3c'; c.fillRect(-2.2, -1, 4.4, 4.5);
+      c.restore();
+    };
+    if (enAire) { pierna(-3, .5, -.9); pierna(3, -.2, -.5); }
+    else { pierna(-3, a, a > 0 ? 0 : -a * .9); pierna(3, -a, a < 0 ? 0 : a * .9); }
+    // Brazo de atrás
+    brazo(-10.5, enAire ? -2.4 : -a * .9);
     // Camiseta café
     c.fillStyle = '#6e4b3c';
     c.beginPath(); c.roundRect ? c.roundRect(-10, -31, 20, 18, 4) : c.rect(-10, -31, 20, 18); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-10, -16, 20, 3);
     // Letras rosadas en el pecho
     c.strokeStyle = '#f2a0b8'; c.lineWidth = 1.1;
     c.beginPath(); c.moveTo(-7, -25); c.quadraticCurveTo(0, -28.5, 7, -25); c.stroke();
@@ -540,29 +607,40 @@ function personaje(x, y, anim, esChica, parpadeo) {
     c.beginPath(); c.moveTo(-6, -23.5); c.quadraticCurveTo(0, -27, 6, -23.5); c.stroke();
     c.strokeStyle = '#f2a0b8'; c.lineWidth = 1;
     c.beginPath(); c.moveTo(-2, -21); c.lineTo(2, -21); c.stroke();
+    // Brazo de adelante
+    brazo(10.5, enAire ? -2.6 : a * .9);
     // Cuello
     c.fillStyle = '#f7d6c4'; c.fillRect(-2.5, -34, 5, 4);
-    // Cabeza
+    // Cabeza (se mueve un poquito al correr)
+    c.save();
+    c.translate(0, enAire ? 0 : Math.sin(anim * 2) * .6);
     elipse(0, -42, 9.5, 10, '#f7d6c4');
-    // Pelo con volumen hacia arriba y peinado de lado
+    // Pelo con volumen (rebota con el movimiento)
+    const pelo = enAire ? Math.max(-2, Math.min(2, yo.vy / 250)) : Math.sin(anim * 2) * .7;
     c.fillStyle = '#3b2a20';
     c.beginPath(); c.ellipse(0, -47, 11, 7.5, 0, Math.PI * .95, Math.PI * 2.05); c.fill();
-    elipse(-3, -52, 8, 5.5, '#3b2a20');
-    elipse(4, -54, 6, 4.5, '#47332a');
+    elipse(-3, -52 + pelo * .5, 8, 5.5, '#3b2a20');
+    elipse(4, -54 + pelo, 6, 4.5, '#47332a');
     elipse(-9, -44, 3, 5, '#3b2a20');
     c.beginPath(); c.moveTo(-9, -48); c.quadraticCurveTo(-2, -42, 6, -46); c.lineTo(8, -49); c.closePath(); c.fill();
     c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1;
-    c.beginPath(); c.arc(1, -51, 5, Math.PI * 1.1, Math.PI * 1.6); c.stroke();
-    // Cejas y ojos (mirando hacia adelante, a la derecha)
+    c.beginPath(); c.arc(1, -51 + pelo * .5, 5, Math.PI * 1.1, Math.PI * 1.6); c.stroke();
+    // Cejas
     c.strokeStyle = '#2a1d16'; c.lineWidth = 1.2;
     c.beginPath(); c.moveTo(0, -45); c.lineTo(4, -45.6); c.stroke();
     c.beginPath(); c.moveTo(5.5, -45.6); c.lineTo(8.5, -45); c.stroke();
-    elipse(2.3, -41.5, 1.6, 2, '#2a1d16'); elipse(7, -41.5, 1.5, 1.9, '#2a1d16');
-    c.fillStyle = '#fff'; c.fillRect(2.6, -42.6, .9, .9); c.fillRect(7.2, -42.6, .8, .8);
-    // Mejilla y sonrisa
+    // Ojos (parpadean de vez en cuando)
+    if ((G.t % 3.4) < .12) {
+      c.lineWidth = 1; c.beginPath(); c.moveTo(1, -41.5); c.lineTo(3.8, -41.5); c.moveTo(5.6, -41.5); c.lineTo(8.4, -41.5); c.stroke();
+    } else {
+      elipse(2.3, -41.5, 1.6, 2, '#2a1d16'); elipse(7, -41.5, 1.5, 1.9, '#2a1d16');
+      c.fillStyle = '#fff'; c.fillRect(2.6, -42.6, .9, .9); c.fillRect(7.2, -42.6, .8, .8);
+    }
+    // Mejilla y boca (abre la boca al saltar)
     elipse(1, -37.8, 1.8, 1, 'rgba(255,140,150,.35)');
-    c.strokeStyle = '#b5675a'; c.lineWidth = .9;
-    c.beginPath(); c.arc(5, -37.5, 2, .3, Math.PI - .5); c.stroke();
+    if (enAire) { elipse(5, -36.6, 1.4, 1.3, '#8a3b33'); }
+    else { c.strokeStyle = '#b5675a'; c.lineWidth = .9; c.beginPath(); c.arc(5, -37.5, 2, .3, Math.PI - .5); c.stroke(); }
+    c.restore();
   }
   c.restore();
 }
@@ -634,11 +712,17 @@ function dibujar() {
   for (const e of G.enemigos) dibujarEnemigo(e);
   // Chica
   if (G.chica) {
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(G.chica.x, SUELO + 1, 11, 2.6, 0, 0, 6.28); ctx.fill();
     personaje(G.chica.x, SUELO, 0, true, false);
     if (G.encuentro) corazon(G.chica.x - 15, SUELO - 74 - Math.sin(G.t * 3) * 4, 30 + Math.sin(G.t * 6) * 3, '#ff4f86');
   }
   // Jugador
-  if (G.estado !== 'menu') personaje(yo.x, yo.y, yo.anim, false, G.invul > 0);
+  if (G.estado !== 'menu') {
+    const alt = Math.max(0, SUELO - yo.y);
+    ctx.fillStyle = 'rgba(0,0,0,.18)';
+    ctx.beginPath(); ctx.ellipse(yo.x, SUELO + 1, Math.max(4, 11 - alt * .06), Math.max(1.2, 2.6 - alt * .015), 0, 0, 6.28); ctx.fill();
+    personaje(yo.x, yo.y, yo.anim, false, G.invul > 0);
+  }
 
   // Partículas
   for (const p of G.parts) { ctx.globalAlpha = Math.min(1, p.v); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.28); ctx.fill(); }
@@ -665,8 +749,30 @@ function bucle(t) {
 }
 
 /* ---------- Controles ---------- */
-lienzo.addEventListener('pointerdown', (e) => { e.preventDefault(); saltar(); });
-addEventListener('keydown', (e) => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); saltar(); } });
+// Tocar la pantalla (o hacer clic) también salta; deslizar hacia abajo agacha
+let inicioToque = null;
+lienzo.addEventListener('pointerdown', (e) => { e.preventDefault(); inicioToque = e.clientY; saltar(); });
+lienzo.addEventListener('pointermove', (e) => { if (inicioToque !== null && e.clientY - inicioToque > 35) presionandoAbajo = true; });
+const soltarToque = () => { if (inicioToque !== null) { inicioToque = null; presionandoAbajo = false; } };
+lienzo.addEventListener('pointerup', soltarToque);
+lienzo.addEventListener('pointercancel', soltarToque);
+
+// Teclado (PC)
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); if (!e.repeat) saltar(); }
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); presionandoAbajo = true; }
+});
+addEventListener('keyup', (e) => {
+  if (e.code === 'ArrowDown' || e.code === 'KeyS') presionandoAbajo = false;
+});
+
+// Botones en pantalla (celular)
+const btnSaltar = $('btn-saltar'), btnAgachar = $('btn-agachar');
+btnSaltar.addEventListener('pointerdown', (e) => { e.preventDefault(); btnSaltar.classList.add('activo'); saltar(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => btnSaltar.addEventListener(ev, () => btnSaltar.classList.remove('activo')));
+btnAgachar.addEventListener('pointerdown', (e) => { e.preventDefault(); btnAgachar.setPointerCapture(e.pointerId); btnAgachar.classList.add('activo'); presionandoAbajo = true; });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => btnAgachar.addEventListener(ev, () => { btnAgachar.classList.remove('activo'); presionandoAbajo = false; }));
+addEventListener('contextmenu', (e) => e.preventDefault());
 
 $('btn-jugar').addEventListener('click', () => {
   iniciarAudio(); musica(true);
