@@ -1,847 +1,220 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Un viaje hacia ti 💖</title>
-<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    overflow: hidden; background: #140a24; color: #fff; font-family: 'Poppins', sans-serif;
-    -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none;
-  }
-  #juego { position: fixed; inset: 0; display: block; }
-
-  /* ---------- Barra superior ---------- */
-  .hud {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 5; padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-    opacity: 0; transition: opacity .6s;
-  }
-  .hud.ver { opacity: 1; }
-  .hud-fila { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .hud .nivel { font-size: .8rem; font-weight: 600; text-shadow: 0 2px 6px rgba(0,0,0,.5); }
-  .hud .cont { font-size: .95rem; font-weight: 800; background: rgba(0,0,0,.25); padding: 4px 12px; border-radius: 999px; }
-  .progreso { position: relative; height: 8px; border-radius: 999px; background: rgba(255,255,255,.22); }
-  .progreso .relleno { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #ffd56b, #ff6f9c); }
-  .progreso .meta { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); font-size: 1rem; }
-  .controles {
-    position: fixed; z-index: 6; left: 0; right: 0; bottom: 14px; padding: 0 16px;
-    display: none; justify-content: space-between; pointer-events: none;
-  }
-  .controles.ver { display: flex; }
-  .ctrl {
-    pointer-events: auto; width: 74px; height: 74px; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,.55); background: rgba(0,0,0,.22); color: #fff;
-    font-family: 'Poppins', sans-serif; font-size: .7rem; font-weight: 600;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); touch-action: none;
-  }
-  .ctrl span { font-size: 1.5rem; line-height: 1; }
-  .ctrl small { font-size: .55rem; font-weight: 400; opacity: .8; }
-  @media (pointer: fine) { .ctrl { width: 86px; height: 86px; cursor: pointer; } }
-  .ctrl.activo { background: rgba(255,255,255,.35); transform: scale(.94); }
-  .solo-pc { display: none; } .solo-cel { display: inline; }
-  @media (pointer: fine) { .solo-pc { display: inline; } .solo-cel { display: none; } }
-  .boton-sonido {
-    position: fixed; z-index: 7; right: 12px; top: 72px; width: 38px; height: 38px; border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.35); background: rgba(0,0,0,.25); color: #fff; font-size: 1.1rem; cursor: pointer;
-  }
-
-  /* ---------- Pantallas ---------- */
-  .capa {
-    position: fixed; inset: 0; z-index: 10; padding: 24px 18px; overflow-y: auto;
-    display: flex; flex-direction: column; align-items: center; text-align: center;
-    background: rgba(20, 8, 36, .78); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-    opacity: 0; pointer-events: none; transition: opacity .6s ease;
-  }
-  .capa.ver { opacity: 1; pointer-events: auto; }
-  .caja { max-width: 440px; width: 100%; margin: auto; }
-  .capa .icono { font-size: 3.4rem; animation: flotar 2.2s ease-in-out infinite; }
-  @keyframes flotar { 50% { transform: translateY(-8px); } }
-  .capa h1 {
-    font-family: 'Dancing Script', cursive; font-weight: 700; font-size: clamp(2.4rem, 10vw, 3.6rem); line-height: 1.1; margin: 8px 0;
-    background: linear-gradient(90deg, #ffd56b, #ff9fc0, #c3a6ff); -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .capa h2 { font-weight: 800; font-size: clamp(1.3rem, 5.5vw, 1.7rem); margin: 6px 0 4px; }
-  .capa .sub { opacity: .85; font-weight: 300; line-height: 1.6; }
-  .capa .mensaje {
-    margin-top: 16px; padding: 18px; border-radius: 16px; text-align: center;
-    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
-    font-family: 'Dancing Script', cursive; font-size: clamp(1.4rem, 5.8vw, 1.8rem); line-height: 1.35; color: #ffe3ef;
-  }
-  .capa .dato { margin-top: 12px; font-size: .95rem; opacity: .9; }
-  .instrucciones { margin-top: 14px; font-size: .85rem; opacity: .75; line-height: 1.6; }
-  .giro { margin-top: 10px; font-size: .78rem; opacity: .6; display: none; }
-  @media (orientation: portrait) { .giro { display: block; } }
-  .boton {
-    margin-top: 22px; padding: 14px 28px; border: none; border-radius: 999px; cursor: pointer;
-    font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 600; color: #fff;
-    background: linear-gradient(135deg, #ff5c8a, #b44dff); box-shadow: 0 8px 28px rgba(255, 92, 138, .5);
-  }
-  .boton:active { transform: scale(.95); }
-  .final h1 { font-size: clamp(2.6rem, 11vw, 4rem); }
-  .final .carta { white-space: pre-line; }
-</style>
-</head>
-<body>
-
-<canvas id="juego"></canvas>
-
-<div class="hud" id="hud">
-  <div class="hud-fila">
-    <span class="nivel" id="hud-nivel"></span>
-    <span class="cont"><span id="hud-vidas">❤️❤️❤️</span> · 💖 <span id="hud-corazones">0</span></span>
-  </div>
-  <div class="progreso"><div class="relleno" id="hud-barra"></div><span class="meta">💖</span></div>
-</div>
-<div class="controles" id="controles">
-  <button class="ctrl" id="btn-agachar" aria-label="Agacharse"><span>⬇</span>Agachar<small class="solo-pc">(tecla ↓)</small></button>
-  <button class="ctrl" id="btn-saltar" aria-label="Saltar"><span>⬆</span>Saltar<small class="solo-pc">(espacio)</small></button>
-</div>
-<button class="boton-sonido" id="btn-sonido" aria-label="Activar o silenciar sonido">🔊</button>
-
-<!-- Menú -->
-<div class="capa ver" id="capa-menu">
-  <div class="caja">
-    <div class="icono">🎮</div>
-    <h1 id="titulo-juego"></h1>
-    <p class="sub" id="sub-juego"></p>
-    <p class="instrucciones">
-      <span class="solo-cel">Usa el botón <b>⬆ Saltar</b> (dos veces para salto doble) y mantén <b>⬇ Agachar</b> para esquivar pájaros.</span>
-      <span class="solo-pc"><b>Espacio / ↑</b> para saltar (dos veces para salto doble) y mantén <b>↓</b> para agacharte.</span>
-      <br>Salta los obstáculos, agáchate ante los pájaros que vuelan a media altura y cae encima de ellos para vencerlos 💥
-      <br>Tienes 3 vidas ❤️ · Recoge todos los corazones 💖</p>
-    <p class="giro">📱 Tip: gira el celular para verlo más grande</p>
-    <button class="boton" id="btn-jugar">Empezar el viaje</button>
-  </div>
-</div>
-
-<!-- Entre niveles -->
-<div class="capa" id="capa-nivel">
-  <div class="caja">
-    <div class="icono">⭐</div>
-    <h2 id="nivel-titulo"></h2>
-    <p class="dato" id="nivel-dato"></p>
-    <div class="mensaje" id="nivel-mensaje"></div>
-    <button class="boton" id="btn-seguir">Seguir el viaje →</button>
-  </div>
-</div>
-
-<!-- Perder -->
-<div class="capa" id="capa-perder">
-  <div class="caja">
-    <div class="icono">🥺</div>
-    <h2>¡Ay, casi!</h2>
-    <p class="sub">No te rindas, que ella te está esperando al final del camino 💖</p>
-    <button class="boton" id="btn-reintentar">Intentar de nuevo</button>
-  </div>
-</div>
-
-<!-- Final -->
-<div class="capa final" id="capa-final">
-  <div class="caja">
-    <div class="icono">💖</div>
-    <h1 id="final-titulo"></h1>
-    <p class="dato" id="final-dato"></p>
-    <div class="mensaje carta" id="final-texto"></div>
-    <button class="boton" id="btn-otra">Jugar otra vez</button>
-  </div>
-</div>
-
-<script>
-/* =========================================================
-   ✏️  PERSONALIZA AQUÍ  ✏️
-   ========================================================= */
-const CONFIG = {
-  titulo: "Un viaje hacia ti",
-  subtitulo: "Ayúdame a cruzar la distancia que nos separa para llegar hasta ti, mi amor.",
-  niveles: [
-    { nombre: "Nivel 1 · Saliendo de Neiva", tema: "atardecer",
-      mensaje: "Cada kilómetro que nos separa lo recorrería mil veces, si al final del camino estás tú." },
-    { nombre: "Nivel 2 · Cruzando la frontera", tema: "noche",
-      mensaje: "Ni las fronteras, ni los ríos, ni las montañas son más grandes que lo que siento por ti." },
-    { nombre: "Nivel 3 · Llegando a ti", tema: "amanecer", mensaje: "" }
-  ],
-  final: {
-    titulo: "¡Llegué a ti!",
-    texto: "Feliz cumpleaños mi amor.\nAlgún día este viaje no va a ser un juego, y cuando por fin te abrace, voy a saber que valió la pena cada kilómetro.\nTe amo ❤️"
-  }
-};
-/* ========================================================= */
-
-const $ = (id) => document.getElementById(id);
-const azar = (a, b) => a + Math.random() * (b - a);
-$('titulo-juego').textContent = CONFIG.titulo;
-$('sub-juego').textContent = CONFIG.subtitulo;
-
-/* ---------- Lienzo y escala ---------- */
-const lienzo = $('juego');
-const ctx = lienzo.getContext('2d');
-let W, H, DPR, escala, VW, VH, SUELO;
-
-function ajustar() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = innerWidth; H = innerHeight;
-  lienzo.width = W * DPR; lienzo.height = H * DPR;
-  lienzo.style.width = W + 'px'; lienzo.style.height = H + 'px';
-  escala = Math.min(H / 360, W / 380);
-  VW = W / escala; VH = H / escala;
-  // En celulares se deja espacio abajo para los botones, así no tapan al personaje
-  SUELO = VH - Math.max(64, 118 / escala);
-  ctx.setTransform(DPR * escala, 0, 0, DPR * escala, 0, 0);
-  crearEstrellas();
-}
-addEventListener('resize', ajustar);
-
-/* ---------- Temas de cada nivel ---------- */
-const TEMAS = {
-  atardecer: { cielo: ['#ff9a6b', '#ffcf8a', '#ffe3b0'], sol: '#fff1c2', lejos: '#c9607a', medio: '#9c3f63', suelo: '#e8a35f', borde: '#b86f3a', obst: 'cactus', estrellas: false },
-  noche:     { cielo: ['#0b0a2a', '#22195a', '#3d2a78'], sol: '#fdf6dc', lejos: '#2a2460', medio: '#1b1745', suelo: '#3a3a6e', borde: '#262457', obst: 'roca', estrellas: true },
-  amanecer:  { cielo: ['#ffb3c8', '#ffd6e0', '#fff0e6'], sol: '#fff7d6', lejos: '#f08fb0', medio: '#d2668f', suelo: '#8fcf8a', borde: '#5fa660', obst: 'flores', estrellas: false }
-};
-
-let estrellas = [];
-function crearEstrellas() {
-  estrellas = Array.from({ length: 90 }, () => ({ x: azar(0, VW), y: azar(0, SUELO * .8), r: azar(.5, 1.6), f: azar(0, 6.28) }));
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>Un viaje hacia ti 2D</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
 }
 
-/* ---------- Estado del juego ---------- */
-const G = {
-  estado: 'menu', nivel: 0, dist: 0, vel: 270, largo: 3400,
-  corazones: 0, total: 0, obst: [], cors: [], parts: [],
-  sigObst: 500, sigCor: 260, terminando: false, finEn: 0, invul: 0, t: 0,
-  chica: null, encuentro: 0, enemigos: [], sigEnemigo: 900, vidas: 3
-};
-const yo = { x: 80, y: 0, vy: 0, saltos: 0, anim: 0, agachado: false, aplastar: 0, enAireAntes: false, polvo: 0 };
-let presionandoAbajo = false;
-
-function iniciarNivel(n) {
-  Object.assign(G, {
-    nivel: n, dist: 0, vel: 270 + n * 25, obst: [], cors: [], parts: [],
-    sigObst: 480, sigCor: 260, terminando: false, finEn: 0, invul: 0, chica: null, encuentro: 0, estado: 'jugando',
-    enemigos: [], sigEnemigo: 800, vidas: 3, largo: 3600 + n * 400
-  });
-  G.inicioNivelTotal = G.total;
-  G.corazonesNivel = 0;
-  pintarVidas();
-  yo.x = 80; yo.y = SUELO; yo.vy = 0; yo.saltos = 0; yo.agachado = false; yo.aplastar = 0;
-  $('controles').classList.add('ver');
-  $('hud-nivel').textContent = CONFIG.niveles[n].nombre;
-  $('hud').classList.add('ver');
+body {
+	color: white;
+	background-color: black;
+	overflow: hidden;
+	touch-action: none;
 }
 
-function saltar() {
-  if (G.estado !== 'jugando') return;
-  if (yo.saltos < 2) {
-    yo.agachado = false;
-    yo.aplastar = -.6;
-    yo.vy = yo.saltos === 0 ? -560 : -500;
-    yo.saltos++;
-    sonido('salto');
-    for (let i = 0; i < 6; i++) G.parts.push({ x: yo.x, y: yo.y, vx: azar(-60, 20), vy: azar(-60, -10), v: 1, c: 'rgba(255,255,255,.8)', r: azar(1.5, 3) });
-  }
+#canvas {
+	display: block;
 }
 
-/* ---------- Generar obstáculos y corazones ---------- */
-function crearObstaculo() {
-  const tipo = TEMAS[CONFIG.niveles[G.nivel].tema].obst;
-  const r = Math.random();
-  let alto = tipo === 'cactus' ? azar(28, 40) : tipo === 'roca' ? azar(18, 28) : azar(20, 30);
-  const ancho = tipo === 'cactus' ? 18 : tipo === 'roca' ? azar(26, 36) : 24;
-  if (r < .22 + G.nivel * .06) alto = azar(54, 64);          // obstáculo alto: necesita salto doble
-  G.obst.push({ x: VW + 40, w: ancho, h: alto, tipo });
-  if (r > .75 - G.nivel * .05) {                              // obstáculo doble
-    G.obst.push({ x: VW + 40 + ancho + azar(46, 64), w: ancho, h: azar(18, 30), tipo });
-  }
-  // corazones en arco encima del obstáculo
-  if (Math.random() < .6) {
-    for (let i = 0; i < 3; i++) G.cors.push({ x: VW + 40 + ancho / 2 + (i - 1) * 26, y: SUELO - alto - 46 - (i === 1 ? 18 : 0) });
-  }
-}
-function crearFilaCorazones() {
-  const n = Math.floor(azar(3, 6));
-  const alto = Math.random() < .5 ? 22 : 70;
-  for (let i = 0; i < n; i++) G.cors.push({ x: VW + 40 + i * 28, y: SUELO - alto - Math.sin(i / (n - 1) * Math.PI) * 24 });
+#canvas:focus {
+	outline: none;
 }
 
-function crearEnemigo() {
-  const r = Math.random();
-  let tipo, y;
-  if (r < .35) { tipo = 'bajo'; y = SUELO - 16; }           // vuela bajito: hay que saltarlo
-  else if (r < .75) { tipo = 'medio'; y = SUELO - 40; }     // a media altura: hay que agacharse
-  else { tipo = 'picada'; y = SUELO - 130; }                // se lanza en picada hacia ti
-  G.enemigos.push({ x: VW + 30, y, y0: y, tipo, aleteo: azar(0, 6), vivo: true, vx: azar(80, 140) + G.nivel * 20 });
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
 }
 
-function golpear() {
-  G.invul = 1.4;
-  G.vidas--;
-  pintarVidas();
-  yo.vy = -320;
-  sonido('golpe');
-  for (let i = 0; i < 10; i++) G.parts.push({ x: yo.x, y: yo.y - 25, vx: azar(-120, 120), vy: azar(-150, 0), v: 1, c: '#ffffff', r: azar(1.5, 3) });
-  if (G.vidas <= 0) perder();
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
 }
 
-function pintarVidas() {
-  $('hud-vidas').textContent = '❤️'.repeat(Math.max(0, G.vidas)) + '🤍'.repeat(Math.max(0, 3 - G.vidas));
+#status {
+	background-color: #140824;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
 }
 
-function perder() {
-  G.estado = 'pausa';
-  G.total = G.inicioNivelTotal;
-  G.corazones = G.total;
-  setTimeout(() => $('capa-perder').classList.add('ver'), 500);
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
 }
 
-/* ---------- Actualizar ---------- */
-function actualizar(dt) {
-  G.t += dt;
-  if (G.estado !== 'jugando' && G.estado !== 'encuentro') return;
-
-  // Física del jugador
-  const enAire = yo.y < SUELO - .5;
-  yo.vy += (presionandoAbajo && enAire ? 3400 : 1500) * dt;   // mantener abajo en el aire = caer rápido
-  yo.y += yo.vy * dt;
-  if (yo.y >= SUELO) {
-    if (yo.enAireAntes && yo.vy > 200) {
-      yo.aplastar = 1;
-      for (let i = 0; i < 8; i++) G.parts.push({ x: yo.x + azar(-8, 8), y: SUELO - 1, vx: azar(-90, 40), vy: azar(-70, -10), v: .7, c: 'rgba(255,255,255,.7)', r: azar(1.5, 3) });
-    }
-    yo.y = SUELO; yo.vy = 0; yo.saltos = 0;
-  }
-  yo.enAireAntes = yo.y < SUELO - .5;
-  yo.agachado = presionandoAbajo && !yo.enAireAntes && G.estado === 'jugando';
-  yo.aplastar *= Math.pow(.0008, dt);
-  // Polvito al correr
-  yo.polvo -= dt;
-  if (!yo.enAireAntes && G.vel > 0 && yo.polvo <= 0) {
-    yo.polvo = .12;
-    G.parts.push({ x: yo.x - 6, y: SUELO - 1, vx: azar(-80, -30), vy: azar(-30, -5), v: .5, c: 'rgba(255,255,255,.45)', r: azar(1, 2.2) });
-  }
-  yo.anim += dt * (G.vel > 0 ? 12 : 0);
-  if (G.invul > 0) G.invul -= dt;
-
-  const mov = G.vel * dt;
-  G.dist += mov;
-  G.obst.forEach(o => o.x -= mov);
-  G.cors.forEach(c => c.x -= mov);
-  if (G.chica) G.chica.x -= mov;
-  for (const e of G.enemigos) {
-    e.x -= mov + e.vx * dt;
-    e.aleteo += dt * 14;
-    if (e.tipo === 'picada' && e.vivo) {
-      const dx = e.x - yo.x;
-      if (dx < 190 && dx > 0) e.y += (SUELO - 34 - e.y) * Math.min(1, dt * 4);
-      else if (dx <= 0) e.y += (SUELO - 140 - e.y) * Math.min(1, dt * 2);
-    } else if (e.vivo) {
-      e.y = e.y0 + Math.sin(e.aleteo * .3) * 4;
-    } else {
-      e.y += 240 * dt;
-    }
-  }
-
-  // Generar cosas
-  if (!G.terminando) {
-    const apuro = 1 - G.nivel * .1;
-    if (G.dist >= G.sigObst) { crearObstaculo(); G.sigObst = G.dist + azar(260, 470) * apuro; }
-    if (G.dist >= G.sigEnemigo && G.dist > 400) { crearEnemigo(); G.sigEnemigo = G.dist + azar(650, 1050) * apuro; }
-    if (G.dist >= G.sigCor) { crearFilaCorazones(); G.sigCor = G.dist + azar(380, 620); }
-    if (G.dist >= G.largo) {
-      G.terminando = true;
-      if (G.nivel === CONFIG.niveles.length - 1) G.chica = { x: VW + 80 };
-      else G.finEn = G.t + 2.2;
-    }
-  }
-  G.obst = G.obst.filter(o => o.x > -60);
-  G.enemigos = G.enemigos.filter(e => e.x > -40 && e.y < VH + 40);
-  G.cors = G.cors.filter(c => c.x > -30 && !c.tomado);
-
-  // Colisiones
-  const caja = yo.agachado ? { x: yo.x - 11, y: yo.y - 27, w: 22, h: 25 } : { x: yo.x - 9, y: yo.y - 46, w: 18, h: 44 };
-  for (const o of G.obst) {
-    const oc = { x: o.x + 3, y: SUELO - o.h + 4, w: o.w - 6, h: o.h - 4 };
-    if (G.invul <= 0 && caja.x < oc.x + oc.w && caja.x + caja.w > oc.x && caja.y < oc.y + oc.h && caja.y + caja.h > oc.y) {
-      golpear();
-    }
-  }
-  for (const e of G.enemigos) {
-    if (!e.vivo || G.estado !== 'jugando') continue;
-    const ex = e.x, ey = e.y;
-    const dx = Math.abs(ex - yo.x), cabeza = yo.y - (yo.agachado ? 27 : 46);
-    if (dx < 16 && yo.vy > 0 && yo.y > ey - 12 && yo.y < ey + 6) {
-      // Le cayó encima: lo vence
-      e.vivo = false; yo.vy = -430; yo.saltos = 1;
-      G.corazones += 2; G.total += 2; G.corazonesNivel += 2;
-      sonido('vencer');
-      for (let i = 0; i < 12; i++) G.parts.push({ x: ex, y: ey, vx: azar(-140, 140), vy: azar(-160, 10), v: 1, c: '#ffd56b', r: azar(1.5, 3) });
-    } else if (G.invul <= 0 && dx < 15 && ey > cabeza - 6 && ey < yo.y + 4) {
-      golpear();
-    }
-  }
-  for (const c of G.cors) {
-    if (Math.hypot(c.x - yo.x, c.y - (yo.y - (yo.agachado ? 14 : 26))) < 26) {
-      c.tomado = true; G.corazones++; G.total++; G.corazonesNivel++;
-      sonido('corazon');
-      for (let i = 0; i < 8; i++) G.parts.push({ x: c.x, y: c.y, vx: azar(-90, 90), vy: azar(-110, 20), v: 1, c: '#ff8fb1', r: azar(1.5, 3) });
-    }
-  }
-
-  // Partículas
-  G.parts.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 200 * dt; p.v -= dt * 1.6; });
-  G.parts = G.parts.filter(p => p.v > 0);
-
-  // Fin de nivel normal
-  if (G.finEn && G.t >= G.finEn && G.estado === 'jugando') terminarNivel();
-
-  // Encuentro final
-  if (G.chica) {
-    if (G.estado === 'jugando' && G.chica.x <= VW * .68) { G.estado = 'encuentro'; G.vel = 0; G.obst = []; G.enemigos = []; }
-    if (G.estado === 'encuentro') {
-      if (yo.x < G.chica.x - 30) { yo.x += 110 * dt; yo.anim += dt * 12; }
-      else if (!G.encuentro) {
-        G.encuentro = G.t;
-        sonido('final');
-        for (let i = 0; i < 40; i++) G.parts.push({ x: G.chica.x - 15, y: SUELO - 40, vx: azar(-160, 160), vy: azar(-260, -40), v: 1.4, c: ['#ff5c8a', '#ffd56b', '#ff9fc0', '#fff'][i % 4], r: azar(2, 4) });
-      } else if (G.t - G.encuentro > 2.4) {
-        mostrarFinal();
-      }
-    }
-  }
-
-  // Barra y contador
-  $('hud-barra').style.width = Math.min(100, G.dist / G.largo * 100) + '%';
-  $('hud-corazones').textContent = G.corazones;
+#status-splash.show-image--false {
+	display: none;
 }
 
-function terminarNivel() {
-  G.estado = 'pausa';
-  const n = CONFIG.niveles[G.nivel];
-  $('nivel-titulo').textContent = '¡' + n.nombre.split('·')[0].trim() + ' completado!';
-  $('nivel-dato').textContent = `Recogiste ${G.corazonesNivel} corazones 💖`;
-  $('nivel-mensaje').textContent = n.mensaje;
-  $('capa-nivel').classList.add('ver');
-  sonido('nivel');
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
 }
 
-function mostrarFinal() {
-  G.estado = 'fin';
-  $('hud').classList.remove('ver');
-  $('controles').classList.remove('ver');
-  $('final-titulo').textContent = CONFIG.final.titulo;
-  $('final-dato').textContent = `Recogiste ${G.total} corazones en el camino 💖, pero el mío ya era tuyo desde hace mucho.`;
-  $('final-texto').textContent = CONFIG.final.texto;
-  $('capa-final').classList.add('ver');
-  fuegos = 3.5;
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
 }
 
-/* ---------- Dibujo ---------- */
-function corazon(x, y, s, color) {
-  ctx.save();
-  ctx.translate(x, y); ctx.scale(s / 16, s / 16);
-  ctx.beginPath();
-  ctx.moveTo(0, 5);
-  ctx.bezierCurveTo(-8, -1, -8, -9, -3.5, -9);
-  ctx.bezierCurveTo(-1, -9, 0, -7, 0, -5.5);
-  ctx.bezierCurveTo(0, -7, 1, -9, 3.5, -9);
-  ctx.bezierCurveTo(8, -9, 8, -1, 0, 5);
-  ctx.fillStyle = color; ctx.fill();
-  ctx.restore();
+#status-progress, #status-notice {
+	display: none;
 }
 
-function montañas(desplazo, base, alto, color, frec) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(0, SUELO);
-  for (let x = 0; x <= VW + 10; x += 10) {
-    const u = (x + desplazo) * frec;
-    const y = base - (Math.sin(u) * .5 + Math.sin(u * 2.3 + 1) * .3 + Math.sin(u * .6 + 2) * .2 + 1) * alto * .5;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(VW, SUELO); ctx.closePath(); ctx.fill();
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
 }
 
-function dibujarObstaculo(o) {
-  const y = SUELO - o.h;
-  if (o.tipo === 'cactus') {
-    ctx.fillStyle = '#3f8f4f';
-    ctx.fillRect(o.x + 6, y, 7, o.h);
-    ctx.fillRect(o.x, y + 10, 5, 12); ctx.fillRect(o.x, y + 18, 9, 4);
-    ctx.fillRect(o.x + 14, y + 6, 5, 12); ctx.fillRect(o.x + 10, y + 14, 9, 4);
-  } else if (o.tipo === 'roca') {
-    ctx.fillStyle = '#6f6a9c';
-    ctx.beginPath();
-    ctx.ellipse(o.x + o.w / 2, SUELO, o.w / 2, o.h, 0, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.18)';
-    ctx.beginPath(); ctx.ellipse(o.x + o.w * .38, SUELO - o.h * .6, o.w * .14, o.h * .18, 0, 0, 6.28); ctx.fill();
-  } else {
-    ctx.fillStyle = '#b5653d';
-    ctx.fillRect(o.x + 2, SUELO - 14, o.w - 4, 14);
-    ctx.fillStyle = '#4c9a50';
-    ctx.fillRect(o.x + o.w / 2 - 1, y + 6, 2, o.h - 18);
-    ['#ff6f9c', '#ffd56b', '#c3a6ff'].forEach((c, i) => {
-      ctx.fillStyle = c;
-      ctx.beginPath(); ctx.arc(o.x + 5 + i * 7, y + 6 + (i % 2) * 5, 4.5, 0, 6.28); ctx.fill();
-    });
-  }
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
 }
+		</style>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<style>body{background:#140824}</style>
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
 
-function personaje(x, y, anim, esChica, parpadeo) {
-  if (parpadeo && Math.floor(G.t * 12) % 2 === 0) return;
-  const paso = Math.sin(anim) * 5;
-  const enAire = y < SUELO - 1;
-  const c = ctx;
-  const elipse = (x, y, rx, ry, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 6.28); c.fill(); };
-  c.save();
-  c.translate(x, y);
+		<noscript>
+			Your browser does not support JavaScript.
+		</noscript>
 
-  if (esChica) {
-    // --- Ella: pelo largo ondulado oscuro con puntas rojizas, camiseta rosada, labios rojos ---
-    const balanceo = Math.sin(G.t * 2) * 1.2;
-    const respira = Math.sin(G.t * 2.4) * .025;
-    c.scale(1 - respira * .5, 1 + respira);
-    if (G.encuentro) c.translate(0, -Math.abs(Math.sin((G.t - G.encuentro) * 7)) * 4 * Math.max(0, 1 - (G.t - G.encuentro) / 1.4));
-    // Pelo de atrás (largo y ondulado)
-    c.fillStyle = '#2a1712';
-    c.beginPath();
-    c.moveTo(-12, -48); c.quadraticCurveTo(-17, -30, -13 + balanceo, -16);
-    c.lineTo(13 + balanceo, -16); c.quadraticCurveTo(17, -30, 12, -48); c.closePath(); c.fill();
-    // Rizos de las puntas (rojizos)
-    for (let i = 0; i < 6; i++) {
-      elipse(-12 + i * 4.8 + balanceo, -16 + (i % 2) * 2, 3.4, 3.8, i % 2 ? '#6b2a24' : '#4a1d18');
-    }
-    // Piernas y zapatos
-    elipse(-4, -1, 3.2, 1.8, '#f4f1ea'); elipse(4, -1, 3.2, 1.8, '#f4f1ea');
-    c.fillStyle = '#2d2d44'; c.fillRect(-6, -14, 4, 13); c.fillRect(2, -14, 4, 13);
-    // Camiseta rosada con rayas de colores
-    c.save();
-    c.beginPath(); c.roundRect ? c.roundRect(-10, -31, 20, 18, 4) : c.rect(-10, -31, 20, 18); c.clip();
-    c.fillStyle = '#ff9cc7'; c.fillRect(-10, -31, 20, 18);
-    [['#ffe28a', -6], ['#8fe3d6', 0], ['#ffffff', 6]].forEach(([col, dx]) => {
-      c.fillStyle = col; c.globalAlpha = .75;
-      c.beginPath(); c.moveTo(dx - 2, -13); c.lineTo(dx + 4, -31); c.lineTo(dx + 6, -31); c.lineTo(dx, -13); c.closePath(); c.fill();
-    });
-    c.globalAlpha = 1;
-    c.restore();
-    // Gafas colgando de la camiseta
-    c.strokeStyle = '#e35d8c'; c.lineWidth = .9;
-    c.beginPath(); c.arc(-3, -22, 2.2, 0, 6.28); c.stroke();
-    c.beginPath(); c.arc(2.5, -22, 2.2, 0, 6.28); c.stroke();
-    // Brazos
-    c.fillStyle = '#ecbd98';
-    c.fillRect(-13, -29, 3.5, 11); c.fillRect(9.5, -29, 3.5, 11);
-    c.fillStyle = '#ff9cc7'; c.fillRect(-13, -30, 4, 4); c.fillRect(9, -30, 4, 4);
-    // Cuello y collar dorado
-    c.fillStyle = '#ecbd98'; c.fillRect(-2.5, -34, 5, 4);
-    c.strokeStyle = '#e8c15a'; c.lineWidth = .8; c.beginPath(); c.arc(0, -33, 3.6, .3, Math.PI - .3); c.stroke();
-    // Cabeza
-    elipse(0, -42, 9.5, 10, '#ecbd98');
-    // Pelo de arriba (peinado hacia atrás) y mechones a los lados
-    c.fillStyle = '#2a1712';
-    c.beginPath(); c.ellipse(0, -45, 10.5, 8.5, 0, Math.PI, 0); c.fill();
-    c.fillRect(-10.5, -46, 3, 8); c.fillRect(7.5, -46, 3, 8);
-    for (let i = 0; i < 4; i++) { elipse(-11, -40 + i * 5, 2.6, 3, '#2a1712'); elipse(11, -40 + i * 5, 2.6, 3, i > 1 ? '#6b2a24' : '#2a1712'); }
-    // Brillo del pelo
-    c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 1;
-    c.beginPath(); c.arc(-1, -46, 6, Math.PI * 1.15, Math.PI * 1.55); c.stroke();
-    // Pinza de mariposa
-    c.fillStyle = '#f3ead0';
-    c.beginPath(); c.ellipse(-4.5, -53, 2.6, 1.8, -.5, 0, 6.28); c.fill();
-    c.beginPath(); c.ellipse(-0.5, -53, 2.6, 1.8, .5, 0, 6.28); c.fill();
-    // Ojos con delineado (mirando hacia él, a la izquierda)
-    if (((G.t + 1.7) % 3.9) < .12) {
-      c.strokeStyle = '#2a1712'; c.lineWidth = 1; c.beginPath(); c.moveTo(-7, -41); c.lineTo(-4, -41); c.moveTo(-2, -41); c.lineTo(1, -41); c.stroke();
-    } else {
-      elipse(-5.5, -41, 1.5, 1.9, '#2a1712'); elipse(-0.5, -41, 1.5, 1.9, '#2a1712');
-      c.fillStyle = '#fff'; c.fillRect(-6, -42, .8, .8); c.fillRect(-1, -42, .8, .8);
-    }
-    c.strokeStyle = '#1a0f0c'; c.lineWidth = .8;
-    c.beginPath(); c.moveTo(-7.5, -42.5); c.lineTo(-8.8, -43.6); c.stroke();
-    c.beginPath(); c.moveTo(1.2, -42.5); c.lineTo(2.4, -43.6); c.stroke();
-    // Mejillas y labios rojos
-    elipse(-7, -37.5, 1.8, 1.1, 'rgba(255,120,140,.45)'); elipse(2.5, -37.5, 1.8, 1.1, 'rgba(255,120,140,.45)');
-    elipse(-3, -35.8, 2, 1.1, '#c8102e');
-    // Aretes
-    elipse(9.6, -37, 1, 1, '#ffd1e6');
-  } else {
-    // --- Él: pelo castaño oscuro con volumen, camiseta café con letras rosadas ---
-    const agachado = yo.agachado;
-    const sq = yo.aplastar;                       // + aplastado al caer, - estirado al saltar
-    const rebote = enAire || agachado ? 0 : Math.abs(Math.sin(anim)) * 2.2;
-    const inclina = enAire ? Math.max(-.25, Math.min(.25, yo.vy / 1800)) : (agachado ? .1 : .06);
-    c.translate(0, -rebote);
-    c.scale(1 + sq * .14 + (agachado ? .12 : 0), 1 - sq * .14 - (agachado ? .38 : 0));
-    c.rotate(inclina);
-    // Sombra de los pies se dibuja aparte; aquí las piernas
-    const a = enAire ? 0 : Math.sin(anim) * .75;
-    const pierna = (cx, ang, dobla) => {
-      c.save(); c.translate(cx, -14); c.rotate(ang);
-      c.fillStyle = '#2b2b36'; c.fillRect(-2.2, 0, 4.5, 7);
-      c.translate(0, 7); c.rotate(dobla);
-      c.fillRect(-2.2, 0, 4.5, 7);
-      c.fillStyle = '#1b1b22'; c.beginPath(); c.ellipse(1.2, 7, 3.4, 1.9, 0, 0, 6.28); c.fill();
-      c.restore();
-    };
-    const brazo = (cx, ang) => {
-      c.save(); c.translate(cx, -29); c.rotate(ang);
-      c.fillStyle = '#f7d6c4'; c.fillRect(-1.8, 0, 3.6, 11);
-      c.fillStyle = '#6e4b3c'; c.fillRect(-2.2, -1, 4.4, 4.5);
-      c.restore();
-    };
-    if (enAire) { pierna(-3, .5, -.9); pierna(3, -.2, -.5); }
-    else { pierna(-3, a, a > 0 ? 0 : -a * .9); pierna(3, -a, a < 0 ? 0 : a * .9); }
-    // Brazo de atrás
-    brazo(-10.5, enAire ? -2.4 : -a * .9);
-    // Camiseta café
-    c.fillStyle = '#6e4b3c';
-    c.beginPath(); c.roundRect ? c.roundRect(-10, -31, 20, 18, 4) : c.rect(-10, -31, 20, 18); c.fill();
-    c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-10, -16, 20, 3);
-    // Letras rosadas en el pecho
-    c.strokeStyle = '#f2a0b8'; c.lineWidth = 1.1;
-    c.beginPath(); c.moveTo(-7, -25); c.quadraticCurveTo(0, -28.5, 7, -25); c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = .6;
-    c.beginPath(); c.moveTo(-6, -23.5); c.quadraticCurveTo(0, -27, 6, -23.5); c.stroke();
-    c.strokeStyle = '#f2a0b8'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(-2, -21); c.lineTo(2, -21); c.stroke();
-    // Brazo de adelante
-    brazo(10.5, enAire ? -2.6 : a * .9);
-    // Cuello
-    c.fillStyle = '#f7d6c4'; c.fillRect(-2.5, -34, 5, 4);
-    // Cabeza (se mueve un poquito al correr)
-    c.save();
-    c.translate(0, enAire ? 0 : Math.sin(anim * 2) * .6);
-    elipse(0, -42, 9.5, 10, '#f7d6c4');
-    // Pelo con volumen (rebota con el movimiento)
-    const pelo = enAire ? Math.max(-2, Math.min(2, yo.vy / 250)) : Math.sin(anim * 2) * .7;
-    c.fillStyle = '#3b2a20';
-    c.beginPath(); c.ellipse(0, -47, 11, 7.5, 0, Math.PI * .95, Math.PI * 2.05); c.fill();
-    elipse(-3, -52 + pelo * .5, 8, 5.5, '#3b2a20');
-    elipse(4, -54 + pelo, 6, 4.5, '#47332a');
-    elipse(-9, -44, 3, 5, '#3b2a20');
-    c.beginPath(); c.moveTo(-9, -48); c.quadraticCurveTo(-2, -42, 6, -46); c.lineTo(8, -49); c.closePath(); c.fill();
-    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1;
-    c.beginPath(); c.arc(1, -51 + pelo * .5, 5, Math.PI * 1.1, Math.PI * 1.6); c.stroke();
-    // Cejas
-    c.strokeStyle = '#2a1d16'; c.lineWidth = 1.2;
-    c.beginPath(); c.moveTo(0, -45); c.lineTo(4, -45.6); c.stroke();
-    c.beginPath(); c.moveTo(5.5, -45.6); c.lineTo(8.5, -45); c.stroke();
-    // Ojos (parpadean de vez en cuando)
-    if ((G.t % 3.4) < .12) {
-      c.lineWidth = 1; c.beginPath(); c.moveTo(1, -41.5); c.lineTo(3.8, -41.5); c.moveTo(5.6, -41.5); c.lineTo(8.4, -41.5); c.stroke();
-    } else {
-      elipse(2.3, -41.5, 1.6, 2, '#2a1d16'); elipse(7, -41.5, 1.5, 1.9, '#2a1d16');
-      c.fillStyle = '#fff'; c.fillRect(2.6, -42.6, .9, .9); c.fillRect(7.2, -42.6, .8, .8);
-    }
-    // Mejilla y boca (abre la boca al saltar)
-    elipse(1, -37.8, 1.8, 1, 'rgba(255,140,150,.35)');
-    if (enAire) { elipse(5, -36.6, 1.4, 1.3, '#8a3b33'); }
-    else { c.strokeStyle = '#b5675a'; c.lineWidth = .9; c.beginPath(); c.arc(5, -37.5, 2, .3, Math.PI - .5); c.stroke(); }
-    c.restore();
-  }
-  c.restore();
-}
+		<div id="status">
+			<img id="status-splash" class="show-image--false fullsize--true use-filter--true" src="index.png" alt="">
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
 
-function dibujarEnemigo(e) {
-  const tema = CONFIG.niveles[G.nivel].tema;
-  const cuerpo = tema === 'noche' ? '#3b2d5e' : tema === 'amanecer' ? '#6a4a8a' : '#4a3a3a';
-  const ala = Math.sin(e.aleteo) * 8;
-  ctx.save();
-  ctx.translate(e.x, e.y);
-  if (!e.vivo) ctx.rotate(Math.PI);
-  // Alas
-  ctx.fillStyle = cuerpo;
-  ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-14, -6 - ala); ctx.lineTo(-6, 2); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(10, -8 - ala); ctx.lineTo(6, 2); ctx.closePath(); ctx.fill();
-  // Cuerpo
-  ctx.beginPath(); ctx.ellipse(0, 0, 10, 7, 0, 0, 6.28); ctx.fill();
-  // Pico
-  ctx.fillStyle = '#ffb347';
-  ctx.beginPath(); ctx.moveTo(-9, -1); ctx.lineTo(-15, 1); ctx.lineTo(-9, 3); ctx.closePath(); ctx.fill();
-  // Ojo enojado
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-5, -2, 2.4, 0, 6.28); ctx.fill();
-  ctx.fillStyle = '#d61f3c'; ctx.beginPath(); ctx.arc(-5.6, -1.8, 1.2, 0, 6.28); ctx.fill();
-  ctx.strokeStyle = '#1a1020'; ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.moveTo(-8.5, -5.5); ctx.lineTo(-2.5, -3.8); ctx.stroke();
-  ctx.restore();
-  // Aviso de picada
-  if (e.vivo && e.tipo === 'picada' && e.x > VW - 10) {
-    ctx.fillStyle = '#ff4f6d'; ctx.font = '800 16px Poppins, sans-serif'; ctx.fillText('!', VW - 14, e.y + 6);
-  }
-}
+		<script src="index.js"></script>
+		<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":512896,"index.wasm":43699190},"focusCanvas":true,"gdextensionLibs":[]};
+const GODOT_THREADS_ENABLED = false;
+const engine = new Engine(GODOT_CONFIG);
 
-let fuegos = 0, chispasFuego = [];
-function dibujar() {
-  const tema = TEMAS[CONFIG.niveles[G.nivel].tema];
-  // Cielo
-  const g = ctx.createLinearGradient(0, 0, 0, SUELO);
-  g.addColorStop(0, tema.cielo[0]); g.addColorStop(.6, tema.cielo[1]); g.addColorStop(1, tema.cielo[2]);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
 
-  if (tema.estrellas) {
-    ctx.fillStyle = '#fff';
-    for (const e of estrellas) { ctx.globalAlpha = .3 + .7 * Math.abs(Math.sin(G.t * 1.5 + e.f)); ctx.fillRect(e.x, e.y, e.r, e.r); }
-    ctx.globalAlpha = 1;
-  }
-  // Sol o luna
-  ctx.fillStyle = tema.sol;
-  ctx.shadowColor = tema.sol; ctx.shadowBlur = 40;
-  ctx.beginPath(); ctx.arc(VW * .78, SUELO * .38, 34, 0, 6.28); ctx.fill();
-  ctx.shadowBlur = 0;
-  if (tema.estrellas) { ctx.fillStyle = tema.cielo[1]; ctx.beginPath(); ctx.arc(VW * .78 + 13, SUELO * .38 - 8, 30, 0, 6.28); ctx.fill(); }
+	let initializing = true;
+	let statusMode = '';
 
-  // Montañas
-  montañas(G.dist * .15, SUELO - 10, 150, tema.lejos, .006);
-  montañas(G.dist * .4 + 500, SUELO, 90, tema.medio, .011);
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
 
-  // Suelo
-  ctx.fillStyle = tema.suelo; ctx.fillRect(0, SUELO, VW, VH - SUELO);
-  ctx.fillStyle = tema.borde; ctx.fillRect(0, SUELO, VW, 5);
-  ctx.fillStyle = 'rgba(0,0,0,.08)';
-  const off = G.dist % 40;
-  for (let x = -off; x < VW; x += 40) ctx.fillRect(x, SUELO + 18, 18, 4);
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
 
-  // Corazones
-  for (const c of G.cors) corazon(c.x, c.y + Math.sin(G.t * 4 + c.x * .05) * 3, 18, '#ff4f86');
-  // Obstáculos
-  G.obst.forEach(dibujarObstaculo);
-  // Enemigos
-  for (const e of G.enemigos) dibujarEnemigo(e);
-  // Chica
-  if (G.chica) {
-    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(G.chica.x, SUELO + 1, 11, 2.6, 0, 0, 6.28); ctx.fill();
-    personaje(G.chica.x, SUELO, 0, true, false);
-    if (G.encuentro) corazon(G.chica.x - 15, SUELO - 74 - Math.sin(G.t * 3) * 4, 30 + Math.sin(G.t * 6) * 3, '#ff4f86');
-  }
-  // Jugador
-  if (G.estado !== 'menu') {
-    const alt = Math.max(0, SUELO - yo.y);
-    ctx.fillStyle = 'rgba(0,0,0,.18)';
-    ctx.beginPath(); ctx.ellipse(yo.x, SUELO + 1, Math.max(4, 11 - alt * .06), Math.max(1.2, 2.6 - alt * .015), 0, 0, 6.28); ctx.fill();
-    personaje(yo.x, yo.y, yo.anim, false, G.invul > 0);
-  }
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
 
-  // Partículas
-  for (const p of G.parts) { ctx.globalAlpha = Math.min(1, p.v); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.28); ctx.fill(); }
-  ctx.globalAlpha = 1;
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
 
-  // Fuegos artificiales del final
-  if (fuegos > 0 && Math.random() < .08) {
-    const x = azar(VW * .1, VW * .9), y = azar(SUELO * .1, SUELO * .5), col = ['#ff5c8a', '#ffd56b', '#c3a6ff', '#7ee8fa'][Math.floor(Math.random() * 4)];
-    for (let i = 0; i < 40; i++) { const a = Math.random() * 6.28, v = azar(40, 160); chispasFuego.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, v: 1, c: col }); }
-  }
-  chispasFuego.forEach(p => { p.x += p.vx / 60; p.y += p.vy / 60; p.vy += 1.2; p.v -= .015; });
-  chispasFuego = chispasFuego.filter(p => p.v > 0);
-  for (const p of chispasFuego) { ctx.globalAlpha = p.v; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 2.5, 2.5); }
-  ctx.globalAlpha = 1;
-}
-
-let ultimo = 0;
-function bucle(t) {
-  const dt = Math.min(.033, (t - ultimo) / 1000 || 0);
-  ultimo = t;
-  actualizar(dt);
-  dibujar();
-  requestAnimationFrame(bucle);
-}
-
-/* ---------- Controles ---------- */
-// Tocar la pantalla (o hacer clic) también salta; deslizar hacia abajo agacha
-let inicioToque = null;
-lienzo.addEventListener('pointerdown', (e) => { e.preventDefault(); inicioToque = e.clientY; saltar(); });
-lienzo.addEventListener('pointermove', (e) => { if (inicioToque !== null && e.clientY - inicioToque > 35) presionandoAbajo = true; });
-const soltarToque = () => { if (inicioToque !== null) { inicioToque = null; presionandoAbajo = false; } };
-lienzo.addEventListener('pointerup', soltarToque);
-lienzo.addEventListener('pointercancel', soltarToque);
-
-// Teclado (PC)
-addEventListener('keydown', (e) => {
-  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); if (!e.repeat) saltar(); }
-  if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); presionandoAbajo = true; }
-});
-addEventListener('keyup', (e) => {
-  if (e.code === 'ArrowDown' || e.code === 'KeyS') presionandoAbajo = false;
-});
-
-// Botones en pantalla (celular)
-const btnSaltar = $('btn-saltar'), btnAgachar = $('btn-agachar');
-btnSaltar.addEventListener('pointerdown', (e) => { e.preventDefault(); btnSaltar.classList.add('activo'); saltar(); });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => btnSaltar.addEventListener(ev, () => btnSaltar.classList.remove('activo')));
-btnAgachar.addEventListener('pointerdown', (e) => { e.preventDefault(); btnAgachar.setPointerCapture(e.pointerId); btnAgachar.classList.add('activo'); presionandoAbajo = true; });
-['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => btnAgachar.addEventListener(ev, () => { btnAgachar.classList.remove('activo'); presionandoAbajo = false; }));
-addEventListener('contextmenu', (e) => e.preventDefault());
-
-$('btn-jugar').addEventListener('click', () => {
-  iniciarAudio(); musica(true);
-  $('capa-menu').classList.remove('ver');
-  G.total = 0; G.corazones = 0;
-  iniciarNivel(0);
-});
-$('btn-seguir').addEventListener('click', () => {
-  $('capa-nivel').classList.remove('ver');
-  iniciarNivel(G.nivel + 1);
-});
-$('btn-reintentar').addEventListener('click', () => {
-  $('capa-perder').classList.remove('ver');
-  iniciarNivel(G.nivel);
-});
-$('btn-otra').addEventListener('click', () => {
-  $('capa-final').classList.remove('ver');
-  fuegos = 0;
-  G.total = 0; G.corazones = 0;
-  iniciarNivel(0);
-});
-
-/* ---------- Sonido ---------- */
-let audioCtx = null, silencio = false, temporizadorMusica = null;
-function iniciarAudio() {
-  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (e) {}
-}
-function nota(f, ini, dur, vol = .06, tipo = 'square') {
-  if (!audioCtx || silencio) return;
-  const t = audioCtx.currentTime + ini;
-  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-  o.type = tipo; o.frequency.setValueAtTime(f, t);
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + dur);
-  o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + dur + .02);
-  return o;
-}
-function sonido(tipo) {
-  if (tipo === 'salto') { const o = nota(420, 0, .15, .05); if (o) o.frequency.exponentialRampToValueAtTime(820, audioCtx.currentTime + .12); }
-  if (tipo === 'corazon') { nota(988, 0, .08, .05); nota(1318, .07, .14, .05); }
-  if (tipo === 'golpe') { const o = nota(180, 0, .25, .07, 'sawtooth'); if (o) o.frequency.exponentialRampToValueAtTime(70, audioCtx.currentTime + .22); }
-  if (tipo === 'vencer') { nota(660, 0, .08, .06); nota(990, .06, .16, .06); }
-  if (tipo === 'nivel') [523, 659, 784, 1046].forEach((f, i) => nota(f, i * .1, .3, .06));
-  if (tipo === 'final') [523, 659, 784, 1046, 1318].forEach((f, i) => nota(f, i * .14, .6, .06, 'triangle'));
-}
-// Musiquita de fondo
-const MELODIA = [659, 784, 880, 784, 659, 587, 523, 587, 659, 0, 659, 784, 880, 1046, 988, 880, 784, 0, 659, 587, 523, 587, 659, 784, 659, 0];
-const BAJO = [262, 262, 220, 220, 175, 175, 196, 196];
-function musica(encender) {
-  clearInterval(temporizadorMusica);
-  if (!encender) return;
-  let i = 0;
-  temporizadorMusica = setInterval(() => {
-    if (G.estado === 'fin' || G.estado === 'menu') return;
-    const f = MELODIA[i % MELODIA.length];
-    if (f) nota(f, 0, .22, .028, 'triangle');
-    if (i % 2 === 0) nota(BAJO[Math.floor(i / 4) % BAJO.length], 0, .4, .035, 'sine');
-    i++;
-  }, 220);
-}
-$('btn-sonido').addEventListener('click', () => {
-  silencio = !silencio;
-  $('btn-sonido').textContent = silencio ? '🔇' : '🔊';
-  iniciarAudio();
-});
-
-/* ---------- Arranque ---------- */
-ajustar();
-yo.y = SUELO;
-requestAnimationFrame(bucle);
-</script>
-</body>
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
+			}
+			// There's a chance that installing the service worker would fix the issue
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error('Service worker already exists.'));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				// For some reason, `getRegistration()` can stall
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				// Reload if there was no error.
+				window.location.reload();
+			}).catch((err) => {
+				console.error('Error while registering service worker:', err);
+			});
+		} else {
+			// Display the message as usual
+			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
+			displayFailureNotice(missingMsg + missing.join('\n'));
+		}
+	} else {
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
 </html>
+
