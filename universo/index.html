@@ -56,6 +56,13 @@
   .dedicatoria .pista { margin-top: 12px; font-size: .78rem; opacity: 0; transition: opacity 1.5s ease; color: #fff; }
   .dedicatoria .pista.ver { opacity: .55; }
 
+  .musica {
+    position: fixed; top: 14px; right: 14px; z-index: 12; width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.1); color: #fff; font-size: 1.1rem;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); cursor: pointer; display: none;
+  }
+  .musica.ver { display: block; }
+  .musica.pausada { opacity: .5; }
   #yt-caja { position: fixed; left: -9999px; top: 0; width: 200px; height: 113px; opacity: 0; pointer-events: none; }
 </style>
 </head>
@@ -72,6 +79,7 @@
 
 <div class="dedicatoria" id="dedicatoria"></div>
 <div id="yt-caja"><div id="yt"></div></div>
+<button class="musica" id="musica" aria-label="Pausar o reanudar la música">🎵</button>
 
 <script>
 /* =========================================================
@@ -92,7 +100,7 @@ const CONFIG = {
     "Feliz cumpleaños mi vida ❤️"
   ],
   // Opcional: canción de YouTube (pon el código que va después de "v=" o déjalo vacío)
-  cancion: { youtubeId: "", empiezaEn: 0, volumen: 70 }
+  cancion: { youtubeId: "yKNxeF4KMsY", empiezaEn: 0, volumen: 75 }   // Coldplay - Yellow
 };
 /* ========================================================= */
 
@@ -387,13 +395,17 @@ function campanita() { [1046.5, 1318.5, 1568].forEach((f, i) => nota(f, i * .07,
 function acorde() { if (!CONFIG.cancion.youtubeId) [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => nota(f, i * .12, 2.5, .06)); }
 
 /* ---------- Canción opcional de YouTube ---------- */
-let reproductor = null, ytListo = false, quiereSonar = false;
+let reproductor = null, ytListo = false, quiereSonar = false, sonando = false;
+$('musica').addEventListener('click', () => { if (!ytListo) return; if (sonando) reproductor.pauseVideo(); else reproductor.playVideo(); });
 if (CONFIG.cancion.youtubeId) {
   window.onYouTubeIframeAPIReady = () => {
     reproductor = new YT.Player('yt', {
       width: 200, height: 113, videoId: CONFIG.cancion.youtubeId,
       playerVars: { autoplay: 0, controls: 0, playsinline: 1, loop: 1, playlist: CONFIG.cancion.youtubeId, start: CONFIG.cancion.empiezaEn },
-      events: { onReady: () => { ytListo = true; reproductor.setVolume(CONFIG.cancion.volumen); if (quiereSonar) reproductor.playVideo(); } }
+      events: {
+        onReady: () => { ytListo = true; reproductor.setVolume(CONFIG.cancion.volumen); if (quiereSonar) reproductor.playVideo(); },
+        onStateChange: (e) => { sonando = e.data === YT.PlayerState.PLAYING; $('musica').classList.toggle('pausada', !sonando); }
+      }
     });
   };
   const s = document.createElement('script');
@@ -405,6 +417,7 @@ $('btn-comenzar').addEventListener('click', () => {
   iniciarAudio();
   quiereSonar = true;
   if (ytListo) reproductor.playVideo();
+  if (CONFIG.cancion.youtubeId) $('musica').classList.add('ver');
   comenzar();
 });
 
