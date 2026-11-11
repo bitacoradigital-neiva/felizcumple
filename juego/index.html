@@ -75,7 +75,7 @@
 <div class="hud" id="hud">
   <div class="hud-fila">
     <span class="nivel" id="hud-nivel"></span>
-    <span class="cont">💖 <span id="hud-corazones">0</span></span>
+    <span class="cont"><span id="hud-vidas">❤️❤️❤️</span> · 💖 <span id="hud-corazones">0</span></span>
   </div>
   <div class="progreso"><div class="relleno" id="hud-barra"></div><span class="meta">💖</span></div>
 </div>
@@ -87,7 +87,7 @@
     <div class="icono">🎮</div>
     <h1 id="titulo-juego"></h1>
     <p class="sub" id="sub-juego"></p>
-    <p class="instrucciones">Toca la pantalla para saltar.<br>Toca dos veces para un salto doble.<br>Recoge todos los corazones que puedas 💖</p>
+    <p class="instrucciones">Toca la pantalla para saltar y dos veces para un salto doble.<br>Esquiva los obstáculos y los pájaros que te atacan.<br>Si caes encima de un pájaro, lo vences 💥<br>Tienes 3 vidas ❤️ · Recoge todos los corazones 💖</p>
     <p class="giro">📱 Tip: gira el celular para verlo más grande</p>
     <button class="boton" id="btn-jugar">Empezar el viaje</button>
   </div>
@@ -101,6 +101,16 @@
     <p class="dato" id="nivel-dato"></p>
     <div class="mensaje" id="nivel-mensaje"></div>
     <button class="boton" id="btn-seguir">Seguir el viaje →</button>
+  </div>
+</div>
+
+<!-- Perder -->
+<div class="capa" id="capa-perder">
+  <div class="caja">
+    <div class="icono">🥺</div>
+    <h2>¡Ay, casi!</h2>
+    <p class="sub">No te rindas, que ella te está esperando al final del camino 💖</p>
+    <button class="boton" id="btn-reintentar">Intentar de nuevo</button>
   </div>
 </div>
 
@@ -176,16 +186,19 @@ const G = {
   estado: 'menu', nivel: 0, dist: 0, vel: 270, largo: 3400,
   corazones: 0, total: 0, obst: [], cors: [], parts: [],
   sigObst: 500, sigCor: 260, terminando: false, finEn: 0, invul: 0, t: 0,
-  chica: null, encuentro: 0
+  chica: null, encuentro: 0, enemigos: [], sigEnemigo: 900, vidas: 3
 };
 const yo = { x: 80, y: 0, vy: 0, saltos: 0, anim: 0 };
 
 function iniciarNivel(n) {
   Object.assign(G, {
     nivel: n, dist: 0, vel: 270 + n * 25, obst: [], cors: [], parts: [],
-    sigObst: 520, sigCor: 260, terminando: false, finEn: 0, invul: 0, chica: null, encuentro: 0, estado: 'jugando'
+    sigObst: 480, sigCor: 260, terminando: false, finEn: 0, invul: 0, chica: null, encuentro: 0, estado: 'jugando',
+    enemigos: [], sigEnemigo: 800, vidas: 3, largo: 3600 + n * 400
   });
+  G.inicioNivelTotal = G.total;
   G.corazonesNivel = 0;
+  pintarVidas();
   yo.x = 80; yo.y = SUELO; yo.vy = 0; yo.saltos = 0;
   $('hud-nivel').textContent = CONFIG.niveles[n].nombre;
   $('hud').classList.add('ver');
@@ -204,9 +217,14 @@ function saltar() {
 /* ---------- Generar obstáculos y corazones ---------- */
 function crearObstaculo() {
   const tipo = TEMAS[CONFIG.niveles[G.nivel].tema].obst;
-  const alto = tipo === 'cactus' ? azar(28, 40) : tipo === 'roca' ? azar(18, 28) : azar(20, 30);
+  const r = Math.random();
+  let alto = tipo === 'cactus' ? azar(28, 40) : tipo === 'roca' ? azar(18, 28) : azar(20, 30);
   const ancho = tipo === 'cactus' ? 18 : tipo === 'roca' ? azar(26, 36) : 24;
+  if (r < .22 + G.nivel * .06) alto = azar(54, 64);          // obstáculo alto: necesita salto doble
   G.obst.push({ x: VW + 40, w: ancho, h: alto, tipo });
+  if (r > .75 - G.nivel * .05) {                              // obstáculo doble
+    G.obst.push({ x: VW + 40 + ancho + azar(46, 64), w: ancho, h: azar(18, 30), tipo });
+  }
   // corazones en arco encima del obstáculo
   if (Math.random() < .6) {
     for (let i = 0; i < 3; i++) G.cors.push({ x: VW + 40 + ancho / 2 + (i - 1) * 26, y: SUELO - alto - 46 - (i === 1 ? 18 : 0) });
@@ -216,6 +234,36 @@ function crearFilaCorazones() {
   const n = Math.floor(azar(3, 6));
   const alto = Math.random() < .5 ? 22 : 70;
   for (let i = 0; i < n; i++) G.cors.push({ x: VW + 40 + i * 28, y: SUELO - alto - Math.sin(i / (n - 1) * Math.PI) * 24 });
+}
+
+function crearEnemigo() {
+  const r = Math.random();
+  let tipo, y;
+  if (r < .4) { tipo = 'bajo'; y = SUELO - 18; }            // vuela bajito: hay que saltarlo
+  else if (r < .7) { tipo = 'alto'; y = SUELO - 78; }       // vuela alto: no saltes
+  else { tipo = 'picada'; y = SUELO - 130; }                // se lanza en picada hacia ti
+  G.enemigos.push({ x: VW + 30, y, y0: y, tipo, aleteo: azar(0, 6), vivo: true, vx: azar(80, 140) + G.nivel * 20 });
+}
+
+function golpear() {
+  G.invul = 1.4;
+  G.vidas--;
+  pintarVidas();
+  yo.vy = -320;
+  sonido('golpe');
+  for (let i = 0; i < 10; i++) G.parts.push({ x: yo.x, y: yo.y - 25, vx: azar(-120, 120), vy: azar(-150, 0), v: 1, c: '#ffffff', r: azar(1.5, 3) });
+  if (G.vidas <= 0) perder();
+}
+
+function pintarVidas() {
+  $('hud-vidas').textContent = '❤️'.repeat(Math.max(0, G.vidas)) + '🤍'.repeat(Math.max(0, 3 - G.vidas));
+}
+
+function perder() {
+  G.estado = 'pausa';
+  G.total = G.inicioNivelTotal;
+  G.corazones = G.total;
+  setTimeout(() => $('capa-perder').classList.add('ver'), 500);
 }
 
 /* ---------- Actualizar ---------- */
@@ -235,10 +283,25 @@ function actualizar(dt) {
   G.obst.forEach(o => o.x -= mov);
   G.cors.forEach(c => c.x -= mov);
   if (G.chica) G.chica.x -= mov;
+  for (const e of G.enemigos) {
+    e.x -= mov + e.vx * dt;
+    e.aleteo += dt * 14;
+    if (e.tipo === 'picada' && e.vivo) {
+      const dx = e.x - yo.x;
+      if (dx < 190 && dx > 0) e.y += (SUELO - 34 - e.y) * Math.min(1, dt * 4);
+      else if (dx <= 0) e.y += (SUELO - 140 - e.y) * Math.min(1, dt * 2);
+    } else if (e.vivo) {
+      e.y = e.y0 + Math.sin(e.aleteo * .3) * 4;
+    } else {
+      e.y += 240 * dt;
+    }
+  }
 
   // Generar cosas
   if (!G.terminando) {
-    if (G.dist >= G.sigObst) { crearObstaculo(); G.sigObst = G.dist + azar(330, 560); }
+    const apuro = 1 - G.nivel * .1;
+    if (G.dist >= G.sigObst) { crearObstaculo(); G.sigObst = G.dist + azar(260, 470) * apuro; }
+    if (G.dist >= G.sigEnemigo && G.dist > 400) { crearEnemigo(); G.sigEnemigo = G.dist + azar(650, 1050) * apuro; }
     if (G.dist >= G.sigCor) { crearFilaCorazones(); G.sigCor = G.dist + azar(380, 620); }
     if (G.dist >= G.largo) {
       G.terminando = true;
@@ -247,6 +310,7 @@ function actualizar(dt) {
     }
   }
   G.obst = G.obst.filter(o => o.x > -60);
+  G.enemigos = G.enemigos.filter(e => e.x > -40 && e.y < VH + 40);
   G.cors = G.cors.filter(c => c.x > -30 && !c.tomado);
 
   // Colisiones
@@ -254,11 +318,21 @@ function actualizar(dt) {
   for (const o of G.obst) {
     const oc = { x: o.x + 3, y: SUELO - o.h + 4, w: o.w - 6, h: o.h - 4 };
     if (G.invul <= 0 && caja.x < oc.x + oc.w && caja.x + caja.w > oc.x && caja.y < oc.y + oc.h && caja.y + caja.h > oc.y) {
-      G.invul = 1.3;
-      const pierde = Math.min(2, G.corazones);
-      G.corazones -= pierde; G.corazonesNivel = Math.max(0, G.corazonesNivel - pierde);
-      yo.vy = -320;
-      sonido('golpe');
+      golpear();
+    }
+  }
+  for (const e of G.enemigos) {
+    if (!e.vivo || G.estado !== 'jugando') continue;
+    const ex = e.x, ey = e.y;
+    const dx = Math.abs(ex - yo.x), cabeza = yo.y - 46;
+    if (dx < 16 && yo.vy > 0 && yo.y > ey - 12 && yo.y < ey + 6) {
+      // Le cayó encima: lo vence
+      e.vivo = false; yo.vy = -430; yo.saltos = 1;
+      G.corazones += 2; G.total += 2; G.corazonesNivel += 2;
+      sonido('vencer');
+      for (let i = 0; i < 12; i++) G.parts.push({ x: ex, y: ey, vx: azar(-140, 140), vy: azar(-160, 10), v: 1, c: '#ffd56b', r: azar(1.5, 3) });
+    } else if (G.invul <= 0 && dx < 15 && ey > cabeza - 6 && ey < yo.y + 4) {
+      golpear();
     }
   }
   for (const c of G.cors) {
@@ -278,7 +352,7 @@ function actualizar(dt) {
 
   // Encuentro final
   if (G.chica) {
-    if (G.estado === 'jugando' && G.chica.x <= VW * .68) { G.estado = 'encuentro'; G.vel = 0; G.obst = []; }
+    if (G.estado === 'jugando' && G.chica.x <= VW * .68) { G.estado = 'encuentro'; G.vel = 0; G.obst = []; G.enemigos = []; }
     if (G.estado === 'encuentro') {
       if (yo.x < G.chica.x - 30) { yo.x += 110 * dt; yo.anim += dt * 12; }
       else if (!G.encuentro) {
@@ -493,6 +567,34 @@ function personaje(x, y, anim, esChica, parpadeo) {
   c.restore();
 }
 
+function dibujarEnemigo(e) {
+  const tema = CONFIG.niveles[G.nivel].tema;
+  const cuerpo = tema === 'noche' ? '#3b2d5e' : tema === 'amanecer' ? '#6a4a8a' : '#4a3a3a';
+  const ala = Math.sin(e.aleteo) * 8;
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  if (!e.vivo) ctx.rotate(Math.PI);
+  // Alas
+  ctx.fillStyle = cuerpo;
+  ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-14, -6 - ala); ctx.lineTo(-6, 2); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(10, -8 - ala); ctx.lineTo(6, 2); ctx.closePath(); ctx.fill();
+  // Cuerpo
+  ctx.beginPath(); ctx.ellipse(0, 0, 10, 7, 0, 0, 6.28); ctx.fill();
+  // Pico
+  ctx.fillStyle = '#ffb347';
+  ctx.beginPath(); ctx.moveTo(-9, -1); ctx.lineTo(-15, 1); ctx.lineTo(-9, 3); ctx.closePath(); ctx.fill();
+  // Ojo enojado
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-5, -2, 2.4, 0, 6.28); ctx.fill();
+  ctx.fillStyle = '#d61f3c'; ctx.beginPath(); ctx.arc(-5.6, -1.8, 1.2, 0, 6.28); ctx.fill();
+  ctx.strokeStyle = '#1a1020'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(-8.5, -5.5); ctx.lineTo(-2.5, -3.8); ctx.stroke();
+  ctx.restore();
+  // Aviso de picada
+  if (e.vivo && e.tipo === 'picada' && e.x > VW - 10) {
+    ctx.fillStyle = '#ff4f6d'; ctx.font = '800 16px Poppins, sans-serif'; ctx.fillText('!', VW - 14, e.y + 6);
+  }
+}
+
 let fuegos = 0, chispasFuego = [];
 function dibujar() {
   const tema = TEMAS[CONFIG.niveles[G.nivel].tema];
@@ -528,6 +630,8 @@ function dibujar() {
   for (const c of G.cors) corazon(c.x, c.y + Math.sin(G.t * 4 + c.x * .05) * 3, 18, '#ff4f86');
   // Obstáculos
   G.obst.forEach(dibujarObstaculo);
+  // Enemigos
+  for (const e of G.enemigos) dibujarEnemigo(e);
   // Chica
   if (G.chica) {
     personaje(G.chica.x, SUELO, 0, true, false);
@@ -574,6 +678,10 @@ $('btn-seguir').addEventListener('click', () => {
   $('capa-nivel').classList.remove('ver');
   iniciarNivel(G.nivel + 1);
 });
+$('btn-reintentar').addEventListener('click', () => {
+  $('capa-perder').classList.remove('ver');
+  iniciarNivel(G.nivel);
+});
 $('btn-otra').addEventListener('click', () => {
   $('capa-final').classList.remove('ver');
   fuegos = 0;
@@ -599,6 +707,7 @@ function sonido(tipo) {
   if (tipo === 'salto') { const o = nota(420, 0, .15, .05); if (o) o.frequency.exponentialRampToValueAtTime(820, audioCtx.currentTime + .12); }
   if (tipo === 'corazon') { nota(988, 0, .08, .05); nota(1318, .07, .14, .05); }
   if (tipo === 'golpe') { const o = nota(180, 0, .25, .07, 'sawtooth'); if (o) o.frequency.exponentialRampToValueAtTime(70, audioCtx.currentTime + .22); }
+  if (tipo === 'vencer') { nota(660, 0, .08, .06); nota(990, .06, .16, .06); }
   if (tipo === 'nivel') [523, 659, 784, 1046].forEach((f, i) => nota(f, i * .1, .3, .06));
   if (tipo === 'final') [523, 659, 784, 1046, 1318].forEach((f, i) => nota(f, i * .14, .6, .06, 'triangle'));
 }
