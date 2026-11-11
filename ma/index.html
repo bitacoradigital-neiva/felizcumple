@@ -226,6 +226,7 @@
    ========================================================= */
 const CONFIG = {
   nombre: "Ma",
+  invitada: "Lorena",                    // nombre que sale en el boleto
   cancion: {
     youtubeId: "c6ASQOwKkhk",            // Jin - The Astronaut
     nombre: "The Astronaut · Jin",
@@ -264,7 +265,7 @@ const $ = (id) => document.getElementById(id);
 const azar = (a, b) => a + Math.random() * (b - a);
 const esperar = (ms) => new Promise(r => setTimeout(r, ms));
 
-$('invitada').textContent = 'Invitada especial: ' + CONFIG.nombre;
+$('invitada').textContent = 'Invitada especial: ' + CONFIG.invitada;
 $('saludo-carta').textContent = CONFIG.saludo;
 $('musica-texto').textContent = '🎵 ' + CONFIG.cancion.nombre;
 
