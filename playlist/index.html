@@ -194,20 +194,20 @@ const CONFIG = {
   nombre: "Lorena",
   apodo: "Ma",
   canciones: [
-    { integrante: "RM", cancion: "Wild Flower (with youjeen)", id: "u18be_kRmC0",
-      deseo: "Como una flor que crece en cualquier rincón, tú siempre encontraste la forma de florecer, incluso en los días difíciles. Y mientras florecías, me enseñaste a mí a hacerlo." },
-    { integrante: "Jin", cancion: "The Astronaut", id: "c6ASQOwKkhk",
-      deseo: "No importa qué tan lejos vaya ni cuánto crezca: tú siempre vas a ser mi lugar en el universo, el planeta al que siempre quiero volver." },
-    { integrante: "SUGA", cancion: "People Pt.2 (feat. IU)", id: "uVD-YgzDzyY",
-      deseo: "Gracias por quererme tal como soy, con mis aciertos y mis errores. Contigo nunca he tenido que fingir ser alguien más." },
-    { integrante: "j-hope", cancion: "on the street (with J. Cole)", id: "r6WbbU_lLCA",
-      deseo: "Por cada calle que he caminado y cada paso que he dado, sé que tu amor y tus bendiciones han ido conmigo." },
-    { integrante: "Jimin", cancion: "Who", id: "Av9DvtlJ9_M",
-      deseo: "Si alguien me pregunta quién es la mujer más importante de mi vida, la respuesta siempre, siempre vas a ser tú." },
-    { integrante: "V", cancion: "Love Me Again", id: "HYzyRHAHJl8",
-      deseo: "Si tuviera que volver a nacer, le pediría a Dios la misma mamá. Te volvería a elegir a ti, una y mil veces." },
-    { integrante: "Jung Kook", cancion: "Standing Next to You", id: "UNo0TG9LwwI",
-      deseo: "Así como tú siempre has estado a mi lado, quiero que sepas que yo voy a estar al tuyo, hoy y todos los días de tu vida." }
+    { integrante: "BTS", cancion: "Dynamite", id: "gdZLi9oWNZg",
+      deseo: "Ma, tú llenas de luz cualquier lugar al que llegas. Hoy quiero que brilles más que nunca, porque esta fiesta es para ti." },
+    { integrante: "BTS", cancion: "Butter", id: "WMweEpGlu_U",
+      deseo: "Contigo todo se siente más suave y más fácil. Tienes el don de hacer que los días pesados se derritan." },
+    { integrante: "BTS", cancion: "Permission to Dance", id: "CuklIb9d3fI",
+      deseo: "Hoy no necesitas permiso para nada: baila, ríe, celebra y disfruta, porque te mereces todo lo bonito de este mundo." },
+    { integrante: "BTS", cancion: "Boy With Luv (feat. Halsey)", id: "XsX3ATc3FbA",
+      deseo: "Gracias por enseñarme a amar con el corazón abierto. Todo lo que sé del amor lo aprendí viéndote a ti." },
+    { integrante: "BTS", cancion: "Life Goes On", id: "-5q5mZbe3V8",
+      deseo: "Pase lo que pase, la vida sigue, y contigo a mi lado siempre sé que todo va a estar bien." },
+    { integrante: "BTS", cancion: "Spring Day", id: "xEeFrLSkMm8",
+      deseo: "Eres mi primavera, Ma: después de cualquier invierno, tú siempre haces que todo vuelva a florecer." },
+    { integrante: "BTS", cancion: "Yet To Come", id: "kXpOEzNZ8hQ",
+      deseo: "Lo más bonito todavía está por venir, y quiero vivirlo contigo. Gracias por todos estos años; vamos por muchos más." }
   ],
   final: {
     titulo: "Feliz cumpleaños, Ma",
@@ -234,7 +234,7 @@ CONFIG.canciones.forEach((c, i) => {
   fila.innerHTML = `<span class="num">${i + 1}</span><span class="eq"><i></i><i></i><i></i></span>
     <div class="datos"><div class="cancion"></div><div class="artista"></div></div>`;
   fila.querySelector('.cancion').textContent = c.cancion;
-  fila.querySelector('.artista').textContent = c.integrante + ' · BTS';
+  fila.querySelector('.artista').textContent = c.integrante;
   fila.addEventListener('click', () => cargar(i, true));
   lista.appendChild(fila);
 });
