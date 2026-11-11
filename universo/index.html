@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi universo eres tú ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    overflow: hidden; background: #060210; color: #fff;
+    font-family: 'Poppins', sans-serif;
+    -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none;
+  }
+  #lienzo { position: fixed; inset: 0; display: block; cursor: grab; }
+  #lienzo:active { cursor: grabbing; }
+
+  /* ---------- Inicio ---------- */
+  .inicio {
+    position: fixed; inset: 0; z-index: 10; padding: 24px 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    background: radial-gradient(ellipse at center, rgba(40, 10, 50, .55), rgba(6, 2, 16, .85));
+    transition: opacity 1.2s ease;
+  }
+  .inicio.oculto { opacity: 0; pointer-events: none; }
+  .inicio .chispa { font-size: 3rem; animation: flotar 2.4s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(255, 160, 200, .8)); }
+  .inicio h1 {
+    font-family: 'Dancing Script', cursive; font-weight: 700; font-size: clamp(2rem, 8vw, 3.2rem); margin: 14px 0 8px;
+    background: linear-gradient(90deg, #ffd56b, #ff9fc0, #c3a6ff, #ffd56b); background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent; animation: brillo 6s linear infinite;
+  }
+  .inicio p { font-weight: 300; opacity: .8; }
+  .boton {
+    margin-top: 26px; padding: 14px 30px; border: none; border-radius: 999px; cursor: pointer;
+    font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 600; color: #fff;
+    background: linear-gradient(135deg, #ff5c8a, #b44dff); box-shadow: 0 0 30px rgba(255, 92, 138, .55);
+    animation: pulso 2s ease-in-out infinite;
+  }
+  .boton:active { transform: scale(.95); }
+  @keyframes flotar { 50% { transform: translateY(-10px); } }
+  @keyframes brillo { to { background-position: 300% 0; } }
+  @keyframes pulso { 50% { box-shadow: 0 0 50px rgba(255, 92, 138, .85); } }
+
+  /* ---------- Dedicatoria final ---------- */
+  .dedicatoria {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; pointer-events: none;
+    padding: 0 16px 28px; text-align: center;
+  }
+  .dedicatoria .linea {
+    font-family: 'Dancing Script', cursive; font-weight: 700; font-size: clamp(1.5rem, 6vw, 2.4rem); line-height: 1.25;
+    color: #ffe3ef; text-shadow: 0 0 18px rgba(255, 120, 170, .8);
+    opacity: 0; transform: translateY(14px); transition: opacity 1.6s ease, transform 1.6s ease;
+  }
+  .dedicatoria .linea.ver { opacity: 1; transform: none; }
+  .dedicatoria .pista { margin-top: 12px; font-size: .78rem; opacity: 0; transition: opacity 1.5s ease; color: #fff; }
+  .dedicatoria .pista.ver { opacity: .55; }
+
+  #yt-caja { position: fixed; left: -9999px; top: 0; width: 200px; height: 113px; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<canvas id="lienzo"></canvas>
+
+<div class="inicio" id="inicio">
+  <div class="chispa">✨</div>
+  <h1 id="titulo-inicio"></h1>
+  <p>Sube el brillo y mira con calma</p>
+  <button class="boton" id="btn-comenzar">Toca para comenzar</button>
+</div>
+
+<div class="dedicatoria" id="dedicatoria"></div>
+<div id="yt-caja"><div id="yt"></div></div>
+
+<script>
+/* =========================================================
+   ✏️  PERSONALIZA AQUÍ  ✏️
+   ========================================================= */
+const CONFIG = {
+  inicio: "Para la persona más bonita de mi universo",
+  // Cada grupo es una pantalla; cada texto dentro del grupo es una línea
+  mensajes: [
+    ["3"], ["2"], ["1"],
+    ["Feliz", "cumpleaños"],
+    ["amor mío"],
+    ["Eres mi", "universo"],
+    ["Te amo"]
+  ],
+  dedicatoria: [
+    "Eres la estrella más bonita de mi universo ✨",
+    "Feliz cumpleaños mi vida ❤️"
+  ],
+  // Opcional: canción de YouTube (pon el código que va después de "v=" o déjalo vacío)
+  cancion: { youtubeId: "", empiezaEn: 0, volumen: 70 }
+};
+/* ========================================================= */
+
+const $ = (id) => document.getElementById(id);
+const azar = (a, b) => a + Math.random() * (b - a);
+const esperar = (ms) => new Promise(r => setTimeout(r, ms));
+$('titulo-inicio').textContent = CONFIG.inicio;
+
+/* ---------- Lienzo ---------- */
+const lienzo = $('lienzo');
+const ctx = lienzo.getContext('2d');
+let W, H, DPR;
+
+/* ---------- Brillos pre-dibujados (más rápido) ---------- */
+const COLORES = ['#ff5c8a', '#ff9fc0', '#ffd56b', '#c3a6ff', '#ffffff', '#ff7aa8'];
+const sprites = COLORES.map(col => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(.18, col);
+  grad.addColorStop(.45, col + '66');
+  grad.addColorStop(1, col + '00');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 32, 32);
+  return c;
+});
+
+/* ---------- Partículas ---------- */
+let particulas = [];
+let estrellas = [];
+
+function puntoCorazon() {
+  const t = Math.random() * Math.PI * 2;
+  const r = Math.random() < .55 ? 1 : Math.pow(Math.random(), .4);
+  const x = 16 * Math.pow(Math.sin(t), 3) * r;
+  const y = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * r;
+  const grosor = 6.5 * Math.sqrt(Math.max(0, 1 - r * r)) + .6;
+  return { hx: x, hy: y, hz: azar(-grosor, grosor) };
+}
+
+function crearParticulas() {
+  const n = Math.round(Math.min(2600, Math.max(1700, W * H / 380)));
+  particulas = Array.from({ length: n }, () => {
+    const h = puntoCorazon();
+    return {
+      x: azar(0, W), y: azar(0, H), vx: 0, vy: 0,
+      tx: azar(0, W), ty: azar(0, H),
+      s: azar(1.1, 2.2), sp: Math.floor(Math.random() * sprites.length),
+      a: 1, ...h, fase: azar(0, 6.28)
+    };
+  });
+}
+
+function crearEstrellas() {
+  estrellas = Array.from({ length: Math.round(W * H / 6000) }, () => ({
+    x: azar(0, W), y: azar(0, H), r: azar(.3, 1.2), f: azar(0, 6.28), v: azar(.01, .03)
+  }));
+}
+
+function ajustar() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  lienzo.width = W * DPR; lienzo.height = H * DPR;
+  lienzo.style.width = W + 'px'; lienzo.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  crearEstrellas();
+  if (!particulas.length) crearParticulas();
+  if (modo === 'texto' && lineasActuales) asignar(puntosTexto(lineasActuales));
+}
+
+/* ---------- Texto convertido en puntos ---------- */
+const lienzoTxt = document.createElement('canvas');
+const ct = lienzoTxt.getContext('2d', { willReadFrequently: true });
+
+function puntosTexto(lineas) {
+  lienzoTxt.width = W; lienzoTxt.height = H;
+  ct.clearRect(0, 0, W, H);
+  ct.fillStyle = '#fff';
+  ct.textAlign = 'center';
+  ct.textBaseline = 'middle';
+  let fs = 200;
+  ct.font = `800 ${fs}px Poppins, sans-serif`;
+  const ancho = Math.max(...lineas.map(l => ct.measureText(l).width));
+  fs = Math.min(fs * (W * .86) / ancho, (H * .5) / lineas.length, 280);
+  ct.font = `800 ${fs}px Poppins, sans-serif`;
+  const alto = fs * 1.05;
+  const y0 = H * .45 - (lineas.length - 1) * alto / 2;
+  lineas.forEach((l, i) => ct.fillText(l, W / 2, y0 + i * alto));
+  const datos = ct.getImageData(0, 0, W, H).data;
+  const pts = [];
+  const paso = fs > 120 ? 3 : 2;
+  for (let y = 0; y < H; y += paso) {
+    for (let x = 0; x < W; x += paso) {
+      if (datos[(y * W + x) * 4 + 3] > 128) pts.push([x, y]);
+    }
+  }
+  return pts;
+}
+
+function asignar(pts) {
+  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+  particulas.forEach((p, i) => {
+    const q = pts[i % pts.length];
+    p.tx = q[0] + azar(-1, 1);
+    p.ty = q[1] + azar(-1, 1);
+  });
+}
+
+function explotar(fuerza) {
+  particulas.forEach(p => {
+    const ang = Math.random() * Math.PI * 2;
+    const f = azar(.3, 1) * fuerza;
+    p.vx += Math.cos(ang) * f;
+    p.vy += Math.sin(ang) * f;
+  });
+}
+
+/* ---------- Estado ---------- */
+let modo = 'libre';          // libre → texto → corazon
+let lineasActuales = null;
+let angulo = 0, velGiro = 0, inclinacion = .18;
+let golpe = 0;
+let fugaz = null;
+
+/* ---------- Dibujo ---------- */
+function latido(t) {
+  const b = (t % 1150) / 1150;
+  return Math.exp(-Math.pow((b - .08) / .035, 2)) + .6 * Math.exp(-Math.pow((b - .26) / .045, 2));
+}
+
+function cuadro(t) {
+  // Fondo con estela suave
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(6, 2, 16, .32)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Estrellas de fondo
+  ctx.fillStyle = '#fff';
+  for (const e of estrellas) {
+    e.f += e.v;
+    ctx.globalAlpha = .15 + .5 * Math.abs(Math.sin(e.f));
+    ctx.fillRect(e.x, e.y, e.r, e.r);
+  }
+
+  // Estrella fugaz
+  if (!fugaz && Math.random() < .006) fugaz = { x: azar(W * .3, W * 1.1), y: azar(-20, H * .4), v: 1 };
+  if (fugaz) {
+    const g = ctx.createLinearGradient(fugaz.x, fugaz.y, fugaz.x + 140, fugaz.y - 60);
+    g.addColorStop(0, `rgba(255,255,255,${fugaz.v})`);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = g; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(fugaz.x, fugaz.y); ctx.lineTo(fugaz.x + 140, fugaz.y - 60); ctx.stroke();
+    fugaz.x -= 14; fugaz.y += 6; fugaz.v -= .018;
+    if (fugaz.v <= 0) fugaz = null;
+  }
+
+  ctx.globalCompositeOperation = 'lighter';
+
+  // Calcular destinos del corazón 3D
+  let escala = 0, cx = W / 2, cy = H * .42;
+  if (modo === 'corazon') {
+    if (!arrastrando) {
+      angulo += velGiro;
+      if (Math.abs(velGiro) < .002) angulo += (Math.sin(t * .0006) * .75 - angulo) * .02;
+    }
+    velGiro *= .94;
+    golpe *= .92;
+    escala = Math.min(W, H) * .78 / 34 * (1 + .07 * latido(t) + golpe);
+    const ca = Math.cos(angulo), sa = Math.sin(angulo);
+    const ci = Math.cos(inclinacion), si = Math.sin(inclinacion);
+    for (const p of particulas) {
+      let x = p.hx * ca + p.hz * sa;
+      let z = -p.hx * sa + p.hz * ca;
+      let y = p.hy * ci - z * si;
+      z = p.hy * si + z * ci;
+      const persp = 420 / (420 + z * escala * .9);
+      p.tx = cx + x * escala * persp;
+      p.ty = cy - y * escala * persp;
+      p.prof = persp;
+    }
+  } else if (modo === 'libre') {
+    for (const p of particulas) {
+      p.fase += .01;
+      p.tx += Math.cos(p.fase) * .4;
+      p.ty += Math.sin(p.fase * .8) * .4;
+    }
+  }
+
+  const k = modo === 'corazon' ? .09 : .028;
+  const roce = modo === 'corazon' ? .78 : .86;
+  for (const p of particulas) {
+    p.vx = (p.vx + (p.tx - p.x) * k) * roce;
+    p.vy = (p.vy + (p.ty - p.y) * k) * roce;
+    p.x += p.vx; p.y += p.vy;
+    let tam = p.s;
+    let alfa = modo === 'libre' ? .5 : .62;
+    if (modo === 'corazon') {
+      tam *= p.prof * 1.15;
+      alfa = Math.min(.8, .15 + (p.prof - .7) * 1.3);
+    }
+    const d = tam * 3.4;
+    ctx.globalAlpha = Math.max(.08, alfa);
+    ctx.drawImage(sprites[p.sp], p.x - d / 2, p.y - d / 2, d, d);
+  }
+
+  requestAnimationFrame(cuadro);
+}
+
+/* ---------- Interacción con el corazón ---------- */
+let arrastrando = false, ultimoX = 0, movido = 0;
+lienzo.addEventListener('pointerdown', (e) => {
+  arrastrando = true; ultimoX = e.clientX; movido = 0;
+  lienzo.setPointerCapture(e.pointerId);
+});
+lienzo.addEventListener('pointermove', (e) => {
+  if (!arrastrando || modo !== 'corazon') return;
+  const dx = e.clientX - ultimoX;
+  ultimoX = e.clientX;
+  movido += Math.abs(dx);
+  angulo += dx * .01;
+  velGiro = dx * .002;
+});
+lienzo.addEventListener('pointerup', () => {
+  arrastrando = false;
+  if (modo === 'corazon' && movido < 6) {
+    golpe = .35;
+    explotar(14);
+    campanita();
+  }
+});
+
+/* ---------- Secuencia ---------- */
+async function comenzar() {
+  $('inicio').classList.add('oculto');
+  modo = 'texto';
+  await esperar(700);
+  for (const lineas of CONFIG.mensajes) {
+    const esNumero = lineas.length === 1 && /^\d+$/.test(lineas[0]);
+    lineasActuales = lineas;
+    explotar(esNumero ? 5 : 9);
+    asignar(puntosTexto(lineas));
+    tono(esNumero ? 660 : 880);
+    await esperar(esNumero ? 1050 : 2900);
+  }
+  lineasActuales = null;
+  explotar(16);
+  modo = 'corazon';
+  acorde();
+  await esperar(2000);
+  mostrarDedicatoria();
+}
+
+function mostrarDedicatoria() {
+  const caja = $('dedicatoria');
+  caja.innerHTML = '';
+  CONFIG.dedicatoria.forEach((texto, i) => {
+    const d = document.createElement('div');
+    d.className = 'linea';
+    d.textContent = texto;
+    caja.appendChild(d);
+    setTimeout(() => d.classList.add('ver'), 300 + i * 2200);
+  });
+  const pista = document.createElement('div');
+  pista.className = 'pista';
+  pista.textContent = 'Gira el corazón con tu dedo · Tócalo para que lata';
+  caja.appendChild(pista);
+  setTimeout(() => pista.classList.add('ver'), 600 + CONFIG.dedicatoria.length * 2200);
+}
+
+/* ---------- Sonido ---------- */
+let audioCtx = null;
+function iniciarAudio() {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (e) {}
+}
+function nota(freq, inicio, dur, vol = .08) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime + inicio;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + .03);
+  g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur + .05);
+}
+function tono(f) { if (!CONFIG.cancion.youtubeId) nota(f, 0, 1.2, .06); }
+function campanita() { [1046.5, 1318.5, 1568].forEach((f, i) => nota(f, i * .07, .8, .05)); }
+function acorde() { if (!CONFIG.cancion.youtubeId) [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => nota(f, i * .12, 2.5, .06)); }
+
+/* ---------- Canción opcional de YouTube ---------- */
+let reproductor = null, ytListo = false, quiereSonar = false;
+if (CONFIG.cancion.youtubeId) {
+  window.onYouTubeIframeAPIReady = () => {
+    reproductor = new YT.Player('yt', {
+      width: 200, height: 113, videoId: CONFIG.cancion.youtubeId,
+      playerVars: { autoplay: 0, controls: 0, playsinline: 1, loop: 1, playlist: CONFIG.cancion.youtubeId, start: CONFIG.cancion.empiezaEn },
+      events: { onReady: () => { ytListo = true; reproductor.setVolume(CONFIG.cancion.volumen); if (quiereSonar) reproductor.playVideo(); } }
+    });
+  };
+  const s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+}
+
+$('btn-comenzar').addEventListener('click', () => {
+  iniciarAudio();
+  quiereSonar = true;
+  if (ytListo) reproductor.playVideo();
+  comenzar();
+});
+
+/* ---------- Arranque ---------- */
+addEventListener('resize', ajustar);
+ajustar();
+requestAnimationFrame(cuadro);
+document.fonts && document.fonts.load('800 100px Poppins');
+</script>
+</body>
+</html>
