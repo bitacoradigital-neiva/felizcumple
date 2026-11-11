@@ -40,8 +40,9 @@
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); touch-action: none;
   }
   .ctrl span { font-size: 1.5rem; line-height: 1; }
+  .ctrl small { font-size: .55rem; font-weight: 400; opacity: .8; }
+  @media (pointer: fine) { .ctrl { width: 86px; height: 86px; cursor: pointer; } }
   .ctrl.activo { background: rgba(255,255,255,.35); transform: scale(.94); }
-  @media (pointer: fine) { .controles.ver { display: none; } }
   .solo-pc { display: none; } .solo-cel { display: inline; }
   @media (pointer: fine) { .solo-pc { display: inline; } .solo-cel { display: none; } }
   .boton-sonido {
@@ -97,8 +98,8 @@
   <div class="progreso"><div class="relleno" id="hud-barra"></div><span class="meta">💖</span></div>
 </div>
 <div class="controles" id="controles">
-  <button class="ctrl" id="btn-agachar" aria-label="Agacharse"><span>⬇</span>Agachar</button>
-  <button class="ctrl" id="btn-saltar" aria-label="Saltar"><span>⬆</span>Saltar</button>
+  <button class="ctrl" id="btn-agachar" aria-label="Agacharse"><span>⬇</span>Agachar<small class="solo-pc">(tecla ↓)</small></button>
+  <button class="ctrl" id="btn-saltar" aria-label="Saltar"><span>⬆</span>Saltar<small class="solo-pc">(espacio)</small></button>
 </div>
 <button class="boton-sonido" id="btn-sonido" aria-label="Activar o silenciar sonido">🔊</button>
 
@@ -189,8 +190,7 @@ function ajustar() {
   escala = Math.min(H / 360, W / 380);
   VW = W / escala; VH = H / escala;
   // En celulares se deja espacio abajo para los botones, así no tapan al personaje
-  const tactil = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  SUELO = VH - Math.max(64, tactil ? 112 / escala : 0);
+  SUELO = VH - Math.max(64, 118 / escala);
   ctx.setTransform(DPR * escala, 0, 0, DPR * escala, 0, 0);
   crearEstrellas();
 }
