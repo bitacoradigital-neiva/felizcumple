@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Razones por las que te amo 💌</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Poppins', sans-serif; color: #fff;
+    background: linear-gradient(160deg, #2b0f2e 0%, #5a1d47 55%, #8a2c56 100%);
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+
+  /* ---------- Luces de fondo ---------- */
+  .luz {
+    position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+    background: radial-gradient(circle, rgba(255, 180, 210, .22), transparent 70%);
+    filter: blur(8px);
+    animation: deriva linear infinite alternate;
+  }
+  @keyframes deriva { to { transform: translate(var(--dx), var(--dy)); } }
+
+  /* ---------- Escena principal ---------- */
+  .escena {
+    position: relative; z-index: 2; width: 100%;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 24px 16px 70px;
+  }
+  .pre { font-size: .85rem; letter-spacing: 3px; text-transform: uppercase; opacity: .75; }
+  h1 {
+    font-family: 'Dancing Script', cursive; font-size: clamp(2.4rem, 9vw, 4rem); line-height: 1.1; margin: 6px 0 10px;
+    background: linear-gradient(90deg, #ffd56b, #ff9fc0, #ffe3ef, #ffd56b); background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: brillo 7s linear infinite;
+  }
+  @keyframes brillo { to { background-position: 300% 0; } }
+  .sub { font-weight: 300; font-size: 1rem; opacity: .9; line-height: 1.6; }
+
+  .frasco-wrap {
+    position: relative; width: min(62vw, 250px); margin-top: 22px; cursor: pointer;
+    transform-origin: 50% 100%; animation: flotar 3.5s ease-in-out infinite;
+  }
+  .frasco-wrap.agitar { animation: agitar .55s ease-in-out; }
+  .frasco-wrap svg { width: 100%; display: block; overflow: visible; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .35)); }
+  .sombra { width: 70%; height: 16px; margin: 4px auto 0; border-radius: 50%; background: rgba(0, 0, 0, .3); filter: blur(6px); }
+  @keyframes flotar { 50% { transform: translateY(-8px); } }
+  @keyframes agitar {
+    20% { transform: rotate(-7deg); } 40% { transform: rotate(6deg); }
+    60% { transform: rotate(-4deg); } 80% { transform: rotate(2deg); }
+  }
+
+  .luciernaga {
+    transform-box: fill-box;
+    animation: volar var(--t) ease-in-out infinite alternate, titilar 1.4s ease-in-out infinite alternate;
+  }
+  @keyframes volar { to { transform: translate(var(--dx), var(--dy)); } }
+  @keyframes titilar { from { opacity: .25; } to { opacity: 1; } }
+  .papel { transition: opacity .5s, transform .5s; transform-box: fill-box; transform-origin: center; }
+  .papel.sale { opacity: 0; transform: translateY(-30px) scale(.6); }
+
+  .contador { margin-top: 14px; font-size: .9rem; opacity: .85; }
+  .pista { margin-top: 6px; font-size: .8rem; opacity: .6; animation: respirar 2s ease-in-out infinite; }
+  @keyframes respirar { 50% { opacity: .25; } }
+
+  /* ---------- Papelito volando ---------- */
+  .volando {
+    position: fixed; width: 44px; height: 26px; border-radius: 3px; z-index: 20; pointer-events: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
+  }
+  .volando::after {
+    content: ''; position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; background: rgba(120, 40, 80, .25);
+  }
+
+  /* ---------- Nota abierta ---------- */
+  .capa {
+    position: fixed; inset: 0; z-index: 10; padding: 20px 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(25, 6, 22, .55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity .4s;
+  }
+  .capa.visible { opacity: 1; pointer-events: auto; }
+
+  .nota {
+    position: relative; width: min(88vw, 370px); min-height: 230px; padding: 38px 26px 26px; border-radius: 6px;
+    color: #5a2340; text-align: center;
+    background:
+      repeating-linear-gradient(transparent 0 33px, rgba(194, 85, 127, .18) 33px 34px),
+      var(--papel, #fff8ef);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, .45);
+    transform-origin: 50% 0;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .capa.visible .nota { animation: desdoblar .75s cubic-bezier(.2, .9, .3, 1.15) both; }
+  @keyframes desdoblar {
+    0% { transform: perspective(800px) rotateX(-85deg) scale(.35); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: none; }
+  }
+  .nota::before {
+    content: ''; position: absolute; top: -13px; left: 50%; width: 96px; height: 26px; margin-left: -48px;
+    background: rgba(255, 213, 107, .75); transform: rotate(-3deg); border-radius: 2px;
+  }
+  .num { display: block; font-size: .75rem; letter-spacing: 2px; text-transform: uppercase; color: #c2557f; margin-bottom: 12px; }
+  #razon { font-family: 'Caveat', cursive; font-size: clamp(1.6rem, 6.5vw, 2rem); line-height: 1.3; }
+  .corazon-nota { margin-top: 10px; font-size: 1.3rem; }
+  .cerrar-pista { margin-top: 12px; font-size: .75rem; color: #c2557f; opacity: .7; }
+
+  .boton {
+    margin-top: 22px; padding: 12px 24px; border: none; border-radius: 999px; cursor: pointer;
+    font-family: 'Poppins', sans-serif; font-size: .95rem; font-weight: 600; color: #fff;
+    background: linear-gradient(135deg, #ff5c8a, #b44dff); box-shadow: 0 8px 24px rgba(255, 92, 138, .4);
+    transition: transform .2s;
+  }
+  .boton:active { transform: scale(.95); }
+
+  /* ---------- Final ---------- */
+  .final-caja { max-width: 440px; text-align: center; }
+  .final-caja h2 {
+    font-family: 'Dancing Script', cursive; font-size: clamp(2.2rem, 9vw, 3.4rem); margin-bottom: 14px;
+    color: #ffd1e1;
+  }
+  .final-caja p { font-weight: 300; font-size: 1.1rem; line-height: 1.7; }
+  .capa-final.visible .final-caja { animation: aparecer 1s ease both; }
+  @keyframes aparecer { from { opacity: 0; transform: translateY(20px) scale(.95); } }
+
+  /* ---------- Pantalla de inicio ---------- */
+  .capa-inicio { background: rgba(25, 6, 22, .7); z-index: 40; flex-direction: column; text-align: center; }
+  .capa-inicio .sobre { font-size: 4.5rem; animation: flotar 2.5s ease-in-out infinite; filter: drop-shadow(0 10px 25px rgba(255, 92, 138, .5)); }
+  .capa-inicio h2 { font-family: 'Dancing Script', cursive; font-size: clamp(2rem, 8vw, 3rem); color: #ffd1e1; margin: 14px 0 6px; }
+  .capa-inicio p { font-weight: 300; opacity: .85; }
+  .capa-inicio .nota-audio { font-size: .8rem; opacity: .6; margin-top: 14px; }
+
+  /* ---------- Reproductor ---------- */
+  #yt-caja { position: fixed; left: -9999px; top: 0; width: 200px; height: 113px; opacity: 0; pointer-events: none; }
+  .musica {
+    position: fixed; z-index: 35; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: none; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; border-radius: 999px;
+    background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-size: .8rem; color: #fff; cursor: pointer; font-family: 'Poppins', sans-serif; white-space: nowrap;
+  }
+  .musica.visible { display: flex; }
+  .ecualizador { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
+  .ecualizador i { width: 3px; background: #ff9fc0; border-radius: 2px; animation: barra .9s ease-in-out infinite alternate; }
+  .ecualizador i:nth-child(2) { animation-delay: .2s; } .ecualizador i:nth-child(3) { animation-delay: .4s; } .ecualizador i:nth-child(4) { animation-delay: .1s; }
+  .musica.pausada .ecualizador i { animation-play-state: paused; }
+  @keyframes barra { from { height: 3px; } to { height: 14px; } }
+
+  .particula { position: fixed; z-index: 30; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<main class="escena">
+  <p class="pre">Para ti, en nuestro aniversario</p>
+  <h1 id="titulo"></h1>
+  <p class="sub">Este frasco guarda las razones por las que te amo.<br>Tócalo para sacar una ✨</p>
+
+  <div class="frasco-wrap" id="frasco">
+    <svg viewBox="0 0 220 310" aria-label="Frasco de razones">
+      <defs>
+        <clipPath id="interior">
+          <path d="M70,58 h80 v10 q0,10 14,18 q36,22 36,70 v110 q0,34 -34,34 h-112 q-34,0 -34,-34 v-110 q0,-48 36,-70 q14,-8 14,-18 z"/>
+        </clipPath>
+        <linearGradient id="vidrio" x1="0" x2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+          <stop offset=".45" stop-color="#fff" stop-opacity=".05"/>
+          <stop offset="1" stop-color="#fff" stop-opacity=".16"/>
+        </linearGradient>
+        <linearGradient id="corcho" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#d9a56b"/>
+          <stop offset="1" stop-color="#a8743f"/>
+        </linearGradient>
+        <filter id="brillo" x="-200%" y="-200%" width="500%" height="500%">
+          <feGaussianBlur stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Interior: papelitos y luciérnagas -->
+      <g clip-path="url(#interior)">
+        <rect x="0" y="0" width="220" height="310" fill="rgba(255,200,225,.06)"/>
+        <g id="papeles"></g>
+        <g id="luciernagas"></g>
+      </g>
+
+      <!-- Vidrio -->
+      <path d="M70,58 h80 v10 q0,10 14,18 q36,22 36,70 v110 q0,34 -34,34 h-112 q-34,0 -34,-34 v-110 q0,-48 36,-70 q14,-8 14,-18 z"
+            fill="url(#vidrio)" stroke="rgba(255,255,255,.6)" stroke-width="2.5"/>
+      <path d="M38,168 q0,-42 28,-62" stroke="rgba(255,255,255,.55)" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M33,186 v70" stroke="rgba(255,255,255,.35)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M186,200 v50" stroke="rgba(255,255,255,.2)" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+      <!-- Corcho y lazo -->
+      <rect x="66" y="18" width="88" height="40" rx="7" fill="url(#corcho)"/>
+      <g fill="#8c5c2e" opacity=".5">
+        <circle cx="82" cy="30" r="2"/><circle cx="104" cy="42" r="1.6"/><circle cx="128" cy="28" r="2.2"/><circle cx="142" cy="46" r="1.5"/>
+      </g>
+      <rect x="66" y="60" width="88" height="10" rx="3" fill="#ff6f98"/>
+      <path d="M150,65 q22,-14 18,6 q-4,14 -18,-6 z M150,65 q12,22 -6,22 q-12,-2 6,-22 z" fill="#ff8fb1"/>
+      <circle cx="150" cy="65" r="4" fill="#e94f80"/>
+      <!-- Etiqueta de corazón -->
+      <path d="M154,68 L176,104" stroke="#ffd56b" stroke-width="1.5"/>
+      <path d="M176,100 c-6,-8 -18,-2 -12,8 l12,12 l12,-12 c6,-10 -6,-16 -12,-8 z" fill="#ffd56b"/>
+    </svg>
+    <div class="sombra"></div>
+  </div>
+
+  <p class="contador" id="contador"></p>
+  <p class="pista" id="pista">Toca el frasco 💌</p>
+</main>
+
+<!-- Nota abierta -->
+<div class="capa" id="capa-nota">
+  <div class="nota" id="nota">
+    <span class="num" id="num"></span>
+    <p id="razon"></p>
+    <div class="corazon-nota">❤️</div>
+    <p class="cerrar-pista">Toca para volver al frasco</p>
+  </div>
+</div>
+
+<!-- Final -->
+<div class="capa capa-final" id="capa-final">
+  <div class="final-caja">
+    <h2>Y aún me faltan…</h2>
+    <p id="texto-final"></p>
+    <button class="boton" id="btn-rellenar">💖 Volver a llenar el frasco</button>
+  </div>
+</div>
+
+<!-- Pantalla de inicio (sirve para que la música pueda sonar) -->
+<div class="capa capa-inicio visible" id="capa-inicio">
+  <div class="sobre">💌</div>
+  <h2>Tengo algo guardado para ti</h2>
+  <p>Ponte cómoda y sube el volumen 🎶</p>
+  <button class="boton" id="btn-empezar">Abrir mi sorpresa</button>
+  <p class="nota-audio">Con música</p>
+</div>
+
+<div id="yt-caja"><div id="yt"></div></div>
+<button class="musica" id="musica" aria-label="Pausar o reanudar la música">
+  <span class="ecualizador"><i></i><i></i><i></i><i></i></span>
+  <span id="musica-texto"></span>
+</button>
+
+<script>
+/* =========================================================
+   ✏️  PERSONALIZA AQUÍ  ✏️
+   ========================================================= */
+const CONFIG = {
+  titulo: "Feliz aniversario amor mío",
+  // Canción de YouTube: copia el código que va después de "v=" en el link del video
+  cancion: {
+    youtubeId: "2Vv-BfVoq4g",              // Ed Sheeran - Perfect
+    nombre: "Perfect · Ed Sheeran",
+    empiezaEn: 0,                           // segundo donde empieza a sonar
+    volumen: 70                             // de 0 a 100
+  },
+  final: "Se acabaron los papelitos, pero no las razones. Si las escribiera todas, no me alcanzaría ni un frasco del tamaño del mundo. Feliz aniversario mi vida ❤️",
+  razones: [
+    "Porque cuando me dices “te amo”, así sea por un mensaje, se me arregla el día entero.",
+    "Porque me escribes “¿ya comiste?” y siento que alguien me cuida, aunque estés tan lejos.",
+    "Porque tu voz es mi canción favorita y nunca me canso de escucharla.",
+    "Porque te ríes de mis chistes malos, y en ese momento me siento el hombre más afortunado del mundo.",
+    "Porque contigo hasta un “buenas noches” se siente como un abrazo.",
+    "Porque me quedo mirando el celular esperando tu mensaje como un bobo enamorado… y me encanta.",
+    "Porque cuando tengo un mal día, me basta escucharte para que todo se calme.",
+    "Porque nunca me has hecho sentir solo, aunque haya kilómetros de por medio.",
+    "Porque me aguantas cuando estoy de mal genio… y aun así me sigues queriendo.",
+    "Porque eres lo primero que pienso al despertar y lo último antes de cerrar los ojos.",
+    "Porque se nos van las horas hablando y siempre me quedo con ganas de cinco minutos más.",
+    "Porque tienes un corazón tan bonito que me dan ganas de ser mejor hombre.",
+    "Porque contigo aprendí que extrañar también puede ser bonito.",
+    "Porque confías en mí sin poder verme, y eso para mí vale más que todo.",
+    "Porque cada vez que pienso en el día en que por fin te abrace, se me acelera el corazón.",
+    "Porque sueño con tomarme un café contigo, sin una pantalla de por medio.",
+    "Porque hasta cuando peleamos, sé que seguimos estando del mismo lado.",
+    "Porque eres mi paz cuando todo a mi alrededor es un caos.",
+    "Porque me haces sentir importante, incluso en los días en que yo no me siento así.",
+    "Porque me preguntas cómo estoy y de verdad quieres saber la respuesta.",
+    "Porque tus mensajes de buenos días le dan sentido a mis mañanas.",
+    "Porque me miras, aunque sea por una videollamada, como si fuera lo más bonito que has visto.",
+    "Porque cuando hablas de tus sueños se te ilumina la voz, y yo quiero estar ahí para verlos cumplirse.",
+    "Porque contigo no tengo que fingir nada: me quieres tal como soy.",
+    "Porque cada día que pasa te quiero un poquito más que ayer.",
+    "Porque me enseñaste que el amor no se mide en kilómetros, sino en ganas.",
+    "Porque ya no me imagino un futuro que no tenga tu nombre.",
+    "Porque Dios te puso en mi camino justo cuando más te necesitaba.",
+    "Porque si tuviera que empezar de nuevo, te buscaría otra vez, en cualquier país y en cualquier vida.",
+    "Porque eres tú. Y con eso me basta para amarte toda la vida."
+  ]
+};
+/* ========================================================= */
+
+const $ = (id) => document.getElementById(id);
+const azar = (a, b) => a + Math.random() * (b - a);
+const NS = 'http://www.w3.org/2000/svg';
+const COLORES = ['#ffd1dc', '#ffe7a3', '#cdeafe', '#e3d4ff', '#ffdcc2', '#d4f5dd'];
+const PAPELES_POR_RAZON = 2;
+
+$('titulo').textContent = CONFIG.titulo;
+$('texto-final').textContent = CONFIG.final;
+
+/* ---------- Luces de fondo ---------- */
+for (let i = 0; i < 14; i++) {
+  const l = document.createElement('div');
+  const t = azar(60, 190);
+  l.className = 'luz';
+  l.style.cssText = `width:${t}px;height:${t}px;left:${azar(-5, 95)}vw;top:${azar(-5, 95)}vh;` +
+    `--dx:${azar(-80, 80)}px;--dy:${azar(-80, 80)}px;animation-duration:${azar(10, 20)}s`;
+  document.body.appendChild(l);
+}
+
+/* ---------- Llenar el frasco ---------- */
+function mezclar(lista) {
+  const a = [...lista];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function llenarFrasco() {
+  const g = $('papeles');
+  g.innerHTML = '';
+  const total = CONFIG.razones.length * PAPELES_POR_RAZON;
+  const porFila = 5;
+  for (let i = 0; i < total; i++) {
+    const fila = Math.floor(i / porFila), col = i % porFila;
+    const x = 30 + col * 32 + azar(-6, 6) + (fila % 2 ? 14 : 0);
+    const y = 274 - fila * 12 + azar(-4, 4);
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', 32); r.setAttribute('height', 15); r.setAttribute('rx', 2);
+    r.setAttribute('fill', COLORES[Math.floor(Math.random() * COLORES.length)]);
+    r.setAttribute('stroke', 'rgba(120,40,80,.18)');
+    r.setAttribute('transform', `rotate(${azar(-35, 35)} ${x + 16} ${y + 7})`);
+    r.classList.add('papel');
+    g.appendChild(r);
+  }
+}
+
+function crearLuciernagas() {
+  const g = $('luciernagas');
+  for (let i = 0; i < 8; i++) {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', azar(45, 175)); c.setAttribute('cy', azar(100, 200));
+    c.setAttribute('r', azar(2, 3.2));
+    c.setAttribute('fill', '#fff3a8');
+    c.setAttribute('filter', 'url(#brillo)');
+    c.classList.add('luciernaga');
+    c.style.setProperty('--dx', azar(-30, 30) + 'px');
+    c.style.setProperty('--dy', azar(-25, 25) + 'px');
+    c.style.setProperty('--t', azar(3, 6) + 's');
+    c.style.animationDelay = `${azar(0, 3)}s, ${azar(0, 1.4)}s`;
+    g.appendChild(c);
+  }
+}
+
+function quitarPapeles(n) {
+  const g = $('papeles');
+  const vivos = [...g.querySelectorAll('.papel:not(.sale)')];
+  vivos.slice(-n).forEach(p => {
+    p.classList.add('sale');
+    setTimeout(() => p.remove(), 500);
+  });
+}
+
+/* ---------- Estado ---------- */
+let mazo, indice, ocupado = false;
+
+function reiniciar() {
+  mazo = mezclar(CONFIG.razones);
+  indice = 0;
+  llenarFrasco();
+  actualizarContador();
+  $('pista').style.display = '';
+}
+
+function actualizarContador() {
+  const n = mazo.length;
+  $('contador').textContent = indice === 0
+    ? `${n} razones esperando por ti`
+    : `Has descubierto ${indice} de ${n} razones`;
+}
+
+/* ---------- Sacar una razón ---------- */
+const frasco = $('frasco');
+frasco.addEventListener('click', sacar);
+
+function sacar() {
+  if (ocupado) return;
+  if (indice >= mazo.length) { mostrarFinal(); return; }
+  ocupado = true;
+  iniciarAudio();
+  $('pista').style.display = 'none';
+  frasco.classList.remove('agitar');
+  void frasco.offsetWidth;
+  frasco.classList.add('agitar');
+  sonidoAgitar();
+  setTimeout(() => { quitarPapeles(PAPELES_POR_RAZON); volarNota(); }, 450);
+}
+frasco.addEventListener('animationend', (e) => {
+  if (e.animationName === 'agitar') frasco.classList.remove('agitar');
+});
+
+function volarNota() {
+  const r = frasco.querySelector('svg').getBoundingClientRect();
+  const x0 = r.left + r.width / 2, y0 = r.top + r.height * .2;
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  const color = COLORES[Math.floor(Math.random() * COLORES.length)];
+  const p = document.createElement('div');
+  p.className = 'volando';
+  p.style.background = color;
+  p.style.left = (x0 - 22) + 'px';
+  p.style.top = (y0 - 13) + 'px';
+  document.body.appendChild(p);
+  const lado = Math.random() < .5 ? -1 : 1;
+  const anim = p.animate([
+    { transform: 'translate(0,0) rotate(0deg) scale(1)' },
+    { transform: `translate(${lado * 70}px, -140px) rotate(${lado * 200}deg) scale(1.5)`, offset: .45 },
+    { transform: `translate(${cx - x0}px, ${cy - y0}px) rotate(${lado * 360}deg) scale(2.4)` }
+  ], { duration: 950, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' });
+  anim.onfinish = () => { p.remove(); abrirNota(color); };
+}
+
+function abrirNota(color) {
+  $('num').textContent = `Razón #${indice + 1}`;
+  $('razon').textContent = mazo[indice];
+  indice++;
+  const nota = $('nota');
+  nota.style.setProperty('--papel', mezclarConBlanco(color));
+  nota.style.animation = 'none';
+  void nota.offsetWidth;
+  nota.style.animation = '';
+  $('capa-nota').classList.add('visible');
+  actualizarContador();
+  campanita();
+  estallido(innerWidth / 2, innerHeight / 2 - 120, 14);
+}
+
+function mezclarConBlanco(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const m = (v) => Math.round(v + (255 - v) * .55);
+  return `rgb(${m(n >> 16)}, ${m((n >> 8) & 255)}, ${m(n & 255)})`;
+}
+
+function cerrarNota() {
+  $('capa-nota').classList.remove('visible');
+  ocupado = false;
+  if (indice >= mazo.length) setTimeout(mostrarFinal, 700);
+}
+$('capa-nota').addEventListener('click', cerrarNota);
+
+/* ---------- Final ---------- */
+function mostrarFinal() {
+  $('capa-final').classList.add('visible');
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => estallido(azar(innerWidth * .15, innerWidth * .85), azar(innerHeight * .2, innerHeight * .7), 22), i * 350);
+  }
+}
+$('btn-rellenar').addEventListener('click', () => {
+  $('capa-final').classList.remove('visible');
+  reiniciar();
+});
+
+/* ---------- Corazoncitos ---------- */
+function estallido(x, y, n) {
+  const simbolos = ['❤️', '💖', '💕', '✨', '💗'];
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.className = 'particula';
+    s.textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    s.style.fontSize = azar(14, 26) + 'px';
+    document.body.appendChild(s);
+    const ang = Math.random() * Math.PI * 2, dist = azar(70, 180);
+    s.animate([
+      { transform: 'translate(-50%,-50%) scale(.3)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist - 40}px)) scale(1) rotate(${azar(-40, 40)}deg)`, opacity: 0 }
+    ], { duration: azar(1100, 1700), easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'forwards' })
+      .onfinish = () => s.remove();
+  }
+}
+
+/* ---------- Sonidos suaves ---------- */
+let audioCtx = null;
+function iniciarAudio() {
+  if (audioCtx) { audioCtx.resume(); return; }
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+}
+function nota(freq, inicio, dur, vol = .12, tipo = 'sine') {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime + inicio;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = tipo; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + .02);
+  g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur + .05);
+}
+function sonidoAgitar() {
+  if (!audioCtx) return;
+  [0, .1, .2, .3].forEach((t, i) => nota(1800 + i * 150, t, .08, .03, 'triangle'));
+}
+function campanita() {
+  [880, 1108.7, 1318.5, 1760].forEach((f, i) => nota(f, i * .08, .9, .08));
+}
+function melodiaFinal() {
+  [523.25, 659.25, 783.99, 1046.5, 987.77, 1046.5].forEach((f, i) => nota(f, i * .22, 1.2, .1));
+}
+
+/* ---------- Música de YouTube ---------- */
+let reproductor = null, listo = false, quiereSonar = false, sonando = false;
+window.onYouTubeIframeAPIReady = function () {
+  reproductor = new YT.Player('yt', {
+    width: 200, height: 113,
+    videoId: CONFIG.cancion.youtubeId,
+    playerVars: {
+      autoplay: 0, controls: 0, playsinline: 1, rel: 0,
+      loop: 1, playlist: CONFIG.cancion.youtubeId, start: CONFIG.cancion.empiezaEn
+    },
+    events: {
+      onReady: () => {
+        listo = true;
+        reproductor.setVolume(CONFIG.cancion.volumen);
+        if (quiereSonar) reproductor.playVideo();
+      },
+      onStateChange: (e) => {
+        sonando = e.data === YT.PlayerState.PLAYING;
+        $('musica').classList.toggle('pausada', !sonando);
+      }
+    }
+  });
+};
+(function cargarYouTube() {
+  const s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
+
+function reproducir() {
+  quiereSonar = true;
+  if (listo) { reproductor.unMute(); reproductor.playVideo(); }
+}
+
+$('musica-texto').textContent = '🎵 ' + CONFIG.cancion.nombre;
+$('musica').addEventListener('click', () => {
+  if (!listo) return;
+  if (sonando) reproductor.pauseVideo(); else reproductor.playVideo();
+});
+
+$('btn-empezar').addEventListener('click', () => {
+  iniciarAudio();
+  reproducir();
+  $('capa-inicio').classList.remove('visible');
+  $('musica').classList.add('visible');
+});
+
+/* ---------- Inicio ---------- */
+crearLuciernagas();
+reiniciar();
+</script>
+</body>
+</html>
